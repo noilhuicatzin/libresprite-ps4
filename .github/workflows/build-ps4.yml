@@ -1,0 +1,169 @@
+name: Build.pkg for PS4
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: libresprite-ps4
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 240
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: libresprite-ps4
+          fetch-depth: 1
+
+      - name: Build info
+        working-directory: libresprite-ps4
+        run: |
+          {
+            echo "LibreSprite PS4 build"
+            echo "Repo: libresprite-ps4 (this repo)"
+            echo "LibreSprite: commit 98f74431f5f523c747d278e3486625ccc7fc52cc (2026-10-30, github.com/LibreSprite/LibreSprite)"
+            echo "SDL: 2.0.18, PacBrew/SDL branch ps4"
+            echo "Deps: zlib 1.3.1, libpng 1.6.44, freetype 2.13.3, libjpeg-turbo 3.1.4, giflib 5.2.2, tinyxml2 9.0.0, libarchive 3.8.9, SDL_image 2.8.8, pixman 0.42.2 (vendored)"
+            echo "Toolchain: OpenOrbis 0.5.4 + LLVM 18.1.8 + CMake 4.1.0"
+            echo "Commit: $GITHUB_SHA"
+            echo "Run: $GITHUB_RUN_ID / attempt $GITHUB_RUN_ATTEMPT"
+            echo "Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > build-info.txt
+
+      - name: Cache tools
+        uses: actions/cache@v4
+        with:
+          path: tools
+          key: libresprite-ps4-tools-oo0.5.4-llvm18.1.8-cmake4.1.0-ninja1.12.1-net8-v1
+
+      - name: Download tools
+        working-directory: libresprite-ps4
+        run: |
+          mkdir -p ../tools
+          cd ../tools
+          [ -f cmake-4.1.0-windows-x86_64/bin/cmake.exe ] || { curl -fL --retry 8 --retry-delay 15 --retry-all-errors -o cmake.zip https://github.com/Kitware/CMake/releases/download/v4.1.0/cmake-4.1.0-windows-x86_64.zip || curl -fL --retry 8 --retry-delay 15 --retry-all-errors -o cmake.zip https://cmake.org/files/v4.1/cmake-4.1.0-windows-x86_64.zip; }
+          [ -f cmake-4.1.0-windows-x86_64/bin/cmake.exe ] || 7z x -y cmake.zip >/dev/null
+          [ -f ninja/ninja.exe ] || curl -fL --retry 8 --retry-delay 15 --retry-all-errors -o ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip
+          [ -f ninja/ninja.exe ] || (mkdir -p ninja && 7z x -y ninja.zip -oninja >/dev/null)
+          # Stock LLVM 18.1.8 (self-extracting exe; unpack with 7-Zip, do not install).
+          # NOTE: OpenOrbis/llvm has no 18.1.8 release zip (404 on
+          # llvm-18.1.8-win64.zip); same fix as the SoH port (run #7, green).
+          [ -f llvm/bin/clang.exe ] || curl -fL --retry 8 --retry-delay 15 --retry-all-errors -o LLVM-18.1.8-win64.exe https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/LLVM-18.1.8-win64.exe
+          [ -f llvm/bin/clang.exe ] || 7z x -y -ollvm LLVM-18.1.8-win64.exe >/dev/null
+          # OpenOrbis toolchain v0.5.4 (the openorbis-ps4-toolchain-0.5.4.zip
+          # asset does not exist either — 404); use toolchain-llvm-18.tar.gz,
+          # same source as the SoH port. It extracts to OpenOrbis/PS4Toolchain.
+          [ -f OpenOrbis/OpenOrbis/PS4Toolchain/include/stdio.h ] || curl -fL --retry 8 --retry-delay 15 --retry-all-errors -o toolchain-llvm-18.tar.gz https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/releases/download/v0.5.4/toolchain-llvm-18.tar.gz
+          [ -f OpenOrbis/OpenOrbis/PS4Toolchain/include/stdio.h ] || (mkdir -p OpenOrbis && tar -xzf toolchain-llvm-18.tar.gz -C OpenOrbis)
+          ./llvm/bin/clang.exe --version | head -2
+          ls -la
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Prepare sources
+        working-directory: libresprite-ps4
+        run: bash scripts/prepare-sources.sh
+
+      - name: Cache deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            libresprite-ps4/prefix
+            libresprite-ps4/deps
+          key: libresprite-ps4-deps-oo0.5.4-llvm18.1.8-sdl2.0.18ps4-libarchive3.8.9-tinyxml29.0.0-v1-${{ hashFiles('libresprite-ps4/build-deps.sh', 'libresprite-ps4/cmake/ps4-toolchain.cmake', 'libresprite-ps4/cmake/Platform/PS4.cmake', 'libresprite-ps4/zlib-cmake/CMakeLists.txt', 'libresprite-ps4/giflib-cmake/CMakeLists.txt', 'libresprite-ps4/patches/libresprite-ps4-pixman.patch') }}
+
+      - name: Build deps
+        working-directory: libresprite-ps4
+        run: bash build-deps.sh
+
+      - name: Build host gen
+        working-directory: libresprite-ps4
+        run: bash build-gen-host.sh
+
+      - name: Configure LibreSprite
+        working-directory: libresprite-ps4
+        run: bash configure.sh
+
+      - name: Build libresprite
+        working-directory: libresprite-ps4
+        run: |
+          source env.sh
+          cmake --build build --target libresprite --parallel 4
+          ls -lh build/bin/libresprite.elf
+          file build/bin/libresprite.elf || true
+
+      - name: Build SDL renderer smoke test
+        working-directory: libresprite-ps4
+        run: |
+          source env.sh
+          cmake -G Ninja -S tests/sdl-renderer-smoke -B build-sdl-renderer-smoke \
+            -DCMAKE_TOOLCHAIN_FILE="$(cygpath -m "$PWD/cmake/ps4-toolchain.cmake")" \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-sdl-renderer-smoke
+          ls -lh build-sdl-renderer-smoke/sdl-renderer-smoke.elf
+
+      - name: Package app
+        working-directory: libresprite-ps4
+        run: |
+          bash package.sh
+          ls -lh out/
+
+      - name: Package SDL renderer smoke test
+        working-directory: libresprite-ps4
+        env:
+          TITLE: LibreSprite SDL Test
+          TITLE_ID: LBSP00002
+          CONTENT_ID: IV0000-LBSP00002_00-LIBRESPSDLTEST00
+          ELF: build-sdl-renderer-smoke/sdl-renderer-smoke.elf
+          OUT_DIR: out-smoke
+          SKIP_DATA: "1"
+        run: |
+          bash package.sh
+          ls -lh out-smoke/
+
+      - name: Upload artifact (app pkg)
+        uses: actions/upload-artifact@v4
+        with:
+          name: libresprite-ps4
+          path: |
+            libresprite-ps4/out/*.pkg
+            libresprite-ps4/build/bin/libresprite.elf
+            libresprite-ps4/build-info.txt
+          retention-days: 14
+
+      - name: Upload artifact (SDL renderer smoke test)
+        uses: actions/upload-artifact@v4
+        with:
+          name: libresprite-ps4-sdl-renderer-smoke
+          path: |
+            libresprite-ps4/out-smoke/*.pkg
+            libresprite-ps4/build-sdl-renderer-smoke/sdl-renderer-smoke.elf
+          retention-days: 14
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: libresprite-ps4-logs
+          path: |
+            libresprite-ps4/deps/build/*/*.log
+            libresprite-ps4/build/CMakeFiles/CMakeOutput.log
+            libresprite-ps4/build/CMakeFiles/CMakeError.log
+            libresprite-ps4/build-host/CMakeFiles/CMakeOutput.log
+            libresprite-ps4/build-host/CMakeFiles/CMakeError.log
+            libresprite-ps4/build-sdl-renderer-smoke/CMakeFiles/CMakeOutput.log
+            libresprite-ps4/build-sdl-renderer-smoke/CMakeFiles/CMakeError.log
+            libresprite-ps4/host-gen.configure.log
+            libresprite-ps4/host-gen.build.log
+          retention-days: 14
