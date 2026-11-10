@@ -1,0 +1,114 @@
+diff --git a/src/app/resource_finder.cpp b/src/app/resource_finder.cpp
+index 284392d..6ee4cc6 100644
+--- a/src/app/resource_finder.cpp
++++ b/src/app/resource_finder.cpp
+@@ -106,6 +106,16 @@ void ResourceFinder::includeDataDir(const char* filename)
+   snprintf(buf, sizeof(buf), "../share/libresprite/data/%s", filename);
+   includeBinDir(buf);
+   
++#elif defined(__PS4__)
++
++  // /data/libresprite/data/filename (user data, uploaded by FTP)
++  snprintf(buf, sizeof(buf), "/data/libresprite/data/%s", filename);
++  addPath(buf);
++
++  // $BINDIR/data/filename (/app0/data/ — bundled in the .pkg)
++  snprintf(buf, sizeof(buf), "data/%s", filename);
++  includeBinDir(buf);
++
+ #else
+ 
+ 
+@@ -143,6 +153,12 @@ void ResourceFinder::includeHomeDir(const char* filename)
+     m_default = path;
+   }
+ 
++#elif defined(__PS4__)
++
++  // /data/libresprite/filename (user config, scripts, brushes, keys)
++  addPath(base::join_path("/data/libresprite", filename));
++  m_default = base::join_path("/data/libresprite", filename);
++
+ #else
+ 
+   char* env = std::getenv("HOME");
+@@ -182,6 +198,11 @@ void ResourceFinder::includeUserDir(const char* filename)
+       base::join_path(base::get_lib_app_support_path(), PACKAGE),
+       filename).c_str());
+ 
++#elif defined(__PS4__)
++
++  // /data/libresprite/filename (via includeHomeDir, which maps to /data)
++  includeHomeDir(filename);
++
+ #else
+ 
+   char buf[4096];
+diff --git a/src/base/fs_unix.h b/src/base/fs_unix.h
+index 3e9754d..5b0ce30 100644
+--- a/src/base/fs_unix.h
++++ b/src/base/fs_unix.h
+@@ -19,7 +19,7 @@
+ 
+ #if __APPLE__
+ #include <mach-o/dyld.h>
+-#elif __FreeBSD__
++#elif __FreeBSD__ && !defined(__PS4__)
+ #include <sys/sysctl.h>
+ #endif
+ 
+@@ -136,6 +136,9 @@ std::string get_app_path()
+   uint32_t size = path.size();
+   while (_NSGetExecutablePath(&path[0], &size) == -1)
+     path.resize(size);
++#elif defined(__PS4__)
++  // The .elf runs as /app0/eboot.bin (the .pkg installs it there).
++  return "/app0/eboot.bin";
+ #elif __FreeBSD__
+   size_t size = path.size();
+   const int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
+@@ -152,16 +155,24 @@ std::string get_app_path()
+ 
+ std::string get_temp_path()
+ {
++#if defined(__PS4__)
++  // No /tmp on PS4; temp files (crash recovery) go to the app data dir.
++  return "/data/libresprite/tmp";
++#else
+   char* tmpdir = getenv("TMPDIR");
+   if (tmpdir)
+     return tmpdir;
+   else
+     return "/tmp";
++#endif
+ }
+ 
+ std::string get_user_docs_folder()
+ {
+-#ifdef ANDROID
++#if defined(__PS4__)
++  // Default save location on PS4.
++  return "/data/libresprite";
++#elif defined(ANDROID)
+   return _AndroidStorageDir;
+ #else
+   char* tmpdir = getenv("HOME");
+@@ -208,6 +219,18 @@ std::vector<std::string> get_font_paths()
+     };
+ }
+ 
++#elif defined(__PS4__)
++
++std::vector<std::string> get_font_paths()
++{
++  // Bundled fonts only (/app0/data/fonts). HOME is unset on PS4, so the
++  // Linux branch below would build std::string from getenv() == nullptr.
++  return {
++    "/app0/data/fonts",
++    "/data/libresprite/data/fonts",
++  };
++}
++
+ #elif !__APPLE__
+ 
+ std::vector<std::string> get_font_paths()

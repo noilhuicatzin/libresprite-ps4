@@ -1,0 +1,24 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2540dbc..d58f161 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -245,7 +245,7 @@ endif()
+ 
+ # -- Unix --
+ 
+-if(UNIX AND NOT APPLE AND NOT BEOS AND NOT GEN_ONLY)
++if(UNIX AND NOT APPLE AND NOT BEOS AND NOT GEN_ONLY AND NOT PS4)
+   # Pthreads
+   find_package(Threads REQUIRED)
+   list(APPEND PLATFORM_LIBS m ${CMAKE_THREAD_LIBS_INIT})
+@@ -291,6 +291,10 @@ if(UNIX AND NOT APPLE AND NOT BEOS AND NOT GEN_ONLY)
+     include_directories(${GTKMM_INCLUDE_DIRS})
+     link_directories(${GTKMM_LIBRARY_DIRS})
+   endif()
++elseif(PS4 AND NOT GEN_ONLY)
++  # PS4: no X11, no pthreads (the toolchain ships a fake Threads package);
++  # libm lives in the OpenOrbis sysroot and the app uses it.
++  list(APPEND PLATFORM_LIBS m)
+ endif()
+ 
+ # -- Windows --

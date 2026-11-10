@@ -1,0 +1,169 @@
+diff --git a/src/joystick/ps4/SDL_sysjoystick.c b/src/joystick/ps4/SDL_sysjoystick.c
+index 7fb0651..08ec47b 100644
+--- a/src/joystick/ps4/SDL_sysjoystick.c
++++ b/src/joystick/ps4/SDL_sysjoystick.c
+@@ -336,11 +336,11 @@ SDL_JoystickGUID PS4_JoystickGetDeviceGUID(int device_index) {
+ static int
+ PS4_JoystickRumble(SDL_Joystick *joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble) {
+     int index = (int) SDL_JoystickInstanceID(joystick);
++    OrbisPadVibeParam param = {high_frequency_rumble / 256, low_frequency_rumble / 256};
+     if (index > ORBIS_USER_SERVICE_MAX_LOGIN_USERS) {
+         return SDL_SetError("PS4_JoystickRumble: invalid joystick index: %i\n", index);
+     }
+ 
+-    OrbisPadVibeParam param = {high_frequency_rumble / 256, low_frequency_rumble / 256};
+     scePadSetVibration(pads_handles[index], &param);
+ 
+     return 0;
+@@ -361,11 +361,11 @@ PS4_JoystickGetCapabilities(SDL_Joystick *joystick) {
+ static int
+ PS4_JoystickSetLED(SDL_Joystick *joystick, Uint8 red, Uint8 green, Uint8 blue) {
+     int index = (int) SDL_JoystickInstanceID(joystick);
++    OrbisPadColor color = {red, green, blue, 255};
+     if (index > ORBIS_USER_SERVICE_MAX_LOGIN_USERS) {
+         return SDL_SetError("PS4_JoystickSetLED: invalid joystick index: %i\n", index);
+     }
+ 
+-    OrbisPadColor color = {red, green, blue, 255};
+     scePadSetLightBar(pads_handles[index], &color);
+ 
+     return 0;
+diff --git a/src/video/ps4/SDL_ps4piglet.c b/src/video/ps4/SDL_ps4piglet.c
+index 17016e3..0545613 100644
+--- a/src/video/ps4/SDL_ps4piglet.c
++++ b/src/video/ps4/SDL_ps4piglet.c
+@@ -138,13 +138,14 @@ static int shaderCompilerPatchModule(const char *name, module_patch_cb_t *cb) {
+ }
+ 
+ int PS4_PigletInit() {
++    char module_path[512];
++    const char *path;
+ 
+     SDL_Log("PS4_PigletInit\n");
+-    char module_path[512];
+ 
+     // load piglet and shader compiler module from specified path if requested
+     // else load from piglet from device without shader compiler support
+-    const char *path = SDL_GetHint(SDL_HINT_PS4_PIGLET_MODULES_PATH);
++    path = SDL_GetHint(SDL_HINT_PS4_PIGLET_MODULES_PATH);
+     if (path) {
+         snprintf(module_path, 511, "%s/%s", path, PIGLET_MODULE_NAME);
+         SDL_Log("PS4_PigletInit: loading piglet module from: %s\n", module_path);
+diff --git a/src/video/ps4/SDL_ps4video.c b/src/video/ps4/SDL_ps4video.c
+index 47b93aa..402d54d 100644
+--- a/src/video/ps4/SDL_ps4video.c
++++ b/src/video/ps4/SDL_ps4video.c
+@@ -58,6 +58,7 @@ PS4_logCb(void *userdata, int category, SDL_LogPriority priority, const char *me
+ int
+ PS4_LoadModules() {
+     uint32_t ret;
++    OrbisUserServiceInitializeParams param;
+ 
+     if (ps4_init_done) {
+         return 0;
+@@ -88,7 +89,6 @@ PS4_LoadModules() {
+     }
+ 
+     // initialize user service (used for pad and audio drivers)
+-    OrbisUserServiceInitializeParams param;
+     param.priority = ORBIS_KERNEL_PRIO_FIFO_LOWEST;
+     ret = sceUserServiceInitialize(&param);
+     if (ret != 0) {
+@@ -119,10 +119,10 @@ PS4_Destroy(SDL_VideoDevice *device) {
+ 
+ static SDL_VideoDevice *
+ PS4_CreateDevice(int devindex) {
+-    SDL_Log("PS4_CreateDevice\n");
+-
+     SDL_VideoDevice *device;
+ 
++    SDL_Log("PS4_CreateDevice\n");
++
+     // log to kernel
+     SDL_LogSetOutputFunction((SDL_LogOutputFunction) &PS4_logCb, NULL);
+ 
+@@ -195,11 +195,11 @@ VideoBootStrap PS4_bootstrap = {
+ /*****************************************************************************/
+ int
+ PS4_VideoInit(_THIS) {
+-    SDL_Log("PS4_VideoInit\n");
+-
+     SDL_VideoDisplay display;
+     SDL_DisplayMode current_mode;
+ 
++    SDL_Log("PS4_VideoInit\n");
++
+     SDL_zero(current_mode);
+     current_mode.w = 1920;
+     current_mode.h = 1080;
+@@ -243,10 +243,10 @@ PS4_VideoQuit(_THIS) {
+ 
+ void
+ PS4_GetDisplayModes(_THIS, SDL_VideoDisplay *display) {
+-    SDL_Log("PS4_GetDisplayModes\n");
+-
+     SDL_DisplayMode mode;
+ 
++    SDL_Log("PS4_GetDisplayModes\n");
++
+     // 1920x1080 RGBA8888, default mode
+     SDL_AddDisplayMode(display, &display->current_mode);
+ 
+@@ -261,10 +261,13 @@ PS4_GetDisplayModes(_THIS, SDL_VideoDisplay *display) {
+ 
+ int
+ PS4_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode) {
++    SDL_WindowData *data;
++    SDL_GLContext ctx;
++
+     SDL_Log("PS4_SetDisplayMode\n");
+ 
+-    SDL_WindowData *data = (SDL_WindowData *) SDL_GetFocusWindow()->driverdata;
+-    SDL_GLContext ctx = SDL_GL_GetCurrentContext();
++    data = (SDL_WindowData *) SDL_GetFocusWindow()->driverdata;
++    ctx = SDL_GL_GetCurrentContext();
+ 
+     if (data != NULL && data->egl_surface != EGL_NO_SURFACE) {
+         SDL_EGL_MakeCurrent(_this, NULL, NULL);
+@@ -282,10 +285,10 @@ PS4_SetDisplayMode(_THIS, SDL_VideoDisplay *display, SDL_DisplayMode *mode) {
+ 
+ int
+ PS4_CreateWindow(_THIS, SDL_Window *window) {
+-    SDL_Log("PS4_CreateWindow\n");
+-
+     SDL_WindowData *window_data = NULL;
+ 
++    SDL_Log("PS4_CreateWindow\n");
++
+     if (ps4_window != NULL) {
+         return SDL_SetError("ps4 only supports one window");
+     }
+@@ -321,9 +324,11 @@ PS4_CreateWindow(_THIS, SDL_Window *window) {
+ 
+ void
+ PS4_DestroyWindow(_THIS, SDL_Window *window) {
++    SDL_WindowData *data;
++
+     SDL_Log("PS4_DestroyWindow\n");
+ 
+-    SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
++    data = (SDL_WindowData *) window->driverdata;
+ 
+     if (window == ps4_window) {
+         if (data != NULL) {
+@@ -359,10 +364,13 @@ PS4_SetWindowPosition(_THIS, SDL_Window *window) {
+ 
+ void
+ PS4_SetWindowSize(_THIS, SDL_Window *window) {
++    SDL_WindowData *data;
++    SDL_GLContext ctx;
++
+     SDL_Log("PS4_SetWindowSize\n");
+ 
+-    SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
+-    SDL_GLContext ctx = SDL_GL_GetCurrentContext();
++    data = (SDL_WindowData *) window->driverdata;
++    ctx = SDL_GL_GetCurrentContext();
+ 
+     if (data != NULL && data->egl_surface != EGL_NO_SURFACE) {
+         SDL_EGL_MakeCurrent(_this, NULL, NULL);

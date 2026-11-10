@@ -1,0 +1,26 @@
+diff --git a/cmake/FindSDL2.cmake b/cmake/FindSDL2.cmake
+index 80f7eb1..20537f3 100644
+--- a/cmake/FindSDL2.cmake
++++ b/cmake/FindSDL2.cmake
+@@ -74,7 +74,7 @@
+ find_package(PkgConfig)
+ 
+ if (PkgConfig_FOUND)
+-  pkg_search_module(SDL2 REQUIRED sdl2)
++  pkg_search_module(SDL2 sdl2)
+   set(SDL2_LIBRARIES ${SDL2_LDFLAGS})
+ endif()
+ 
+diff --git a/cmake/FindSDL2_IMAGE.cmake b/cmake/FindSDL2_IMAGE.cmake
+index 7d0de5d..4ca3c4d 100644
+--- a/cmake/FindSDL2_IMAGE.cmake
++++ b/cmake/FindSDL2_IMAGE.cmake
+@@ -40,7 +40,7 @@
+ find_package(PkgConfig)
+ 
+ if (PkgConfig_FOUND)
+-  pkg_search_module(SDL2_IMAGE REQUIRED SDL2_image)
++  pkg_search_module(SDL2_IMAGE SDL2_image)
+   set(SDL2_IMAGE_LIBRARIES ${SDL2_IMAGE_LDFLAGS})
+ endif()
+ 

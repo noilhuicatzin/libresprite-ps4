@@ -1,0 +1,28 @@
+diff --git a/third_party/pixman/CMakeLists.txt b/third_party/pixman/CMakeLists.txt
+index abf5081..f96d42d 100644
+--- a/third_party/pixman/CMakeLists.txt
++++ b/third_party/pixman/CMakeLists.txt
+@@ -59,10 +59,9 @@ set(PIXMAN_SRC
+ 
+ set(PIXMAN_CFLAGS
+         "-DHAVE_BUILTIN_CLZ=1"
+-        "-DHAVE_PTHREADS=1"
++        "-DPIXMAN_NO_TLS"
+         "-DPACKAGE=\"pixman\""
+         "-DTLS=__thread"
+-        "-DUSE_OPENMP=1"
+         "-I${CMAKE_CURRENT_BINARY_DIR}")
+ 
+ if("${CMAKE_ANDROID_ARCH_ABI}" STREQUAL "arm64-v8a")
+@@ -100,3 +99,11 @@ add_library(pixman STATIC ${PIXMAN_SRC})
+ target_compile_options(pixman PRIVATE ${PIXMAN_CFLAGS})
+ target_include_directories(pixman PRIVATE pixman "${CMAKE_CURRENT_BINARY_DIR}")
+ # target_apply_patch(pixman "${CMAKE_CURRENT_SOURCE_DIR}/pixman" "${CMAKE_CURRENT_SOURCE_DIR}/patches/pixman.patch")
++
++# PS4 install: libpixman.a + headers under include/pixman-1/, so the app's
++# find_library(PIXMAN_LIBRARY NAMES pixman pixman-1) and
++# find_path(PIXMAN_INCLUDE_DIR NAMES pixman.h PATH_SUFFIXES pixman-1) find it.
++install(TARGETS pixman ARCHIVE DESTINATION lib)
++install(FILES pixman/pixman.h DESTINATION include/pixman-1)
++install(FILES "${CMAKE_CURRENT_BINARY_DIR}/pixman-version.h" DESTINATION include/pixman-1)
++install(FILES "${CMAKE_CURRENT_BINARY_DIR}/pixman-config.h" DESTINATION include/pixman-1)
