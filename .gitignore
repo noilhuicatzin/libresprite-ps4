@@ -1,0 +1,15 @@
+# Build outputs (never committed)
+/libresprite/
+/prefix/
+/deps/
+/build/
+/build-host/
+/build-sdl-renderer-smoke/
+/host-gen/
+/host-prefix/
+/host-build-tinyxml2/
+/host-*.log
+/pkg/
+/out/
+/out-smoke/
+/eboot.oelf

@@ -1,0 +1,7 @@
+# Keep line endings and binary files intact on Windows runners and phones.
+*.sh text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.cmake text eol=lf
+*.txt text eol=lf
+*.png binary
