@@ -36,7 +36,13 @@ fi
 
 if [ ! -d "$WORKSPACE/libresprite" ]; then
     echo "== cloning LibreSprite at $LIBRESPRITE_COMMIT (GitHub)"
-    git clone https://github.com/LibreSprite/LibreSprite.git "$WORKSPACE/libresprite"
+    # LF checkout (run #1 root cause): the Windows runner's git converts
+    # text files to CRLF by default, and LibreSprite's own .gitattributes
+    # pins only *.txt/*.cpp/*.h/*.md/*.xml to LF — cmake/*.cmake would come
+    # out CRLF while the patches (pinned LF, see .gitattributes) would not
+    # match them. core.autocrlf=false keeps every file LF, as stored.
+    git -c core.autocrlf=false clone https://github.com/LibreSprite/LibreSprite.git "$WORKSPACE/libresprite"
+    git -C "$WORKSPACE/libresprite" config core.autocrlf false
     git -C "$WORKSPACE/libresprite" checkout -q "$LIBRESPRITE_COMMIT"
 else
     echo "== reusing existing $WORKSPACE/libresprite"
