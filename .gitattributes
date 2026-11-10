@@ -1,4 +1,7 @@
 # Keep line endings and binary files intact on Windows runners and phones.
+# *.patch MUST stay LF: git apply fails when a CRLF patch meets LF files
+# (run #1: patch failed CMakeLists.txt:245 on windows-latest).
+*.patch text eol=lf
 *.sh text eol=lf
 *.yml text eol=lf
 *.md text eol=lf

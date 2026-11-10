@@ -35,9 +35,13 @@ TC="$HERE/cmake/ps4-toolchain.cmake"
 mkdir -p "$SRC" "$BLD" "$PREFIX"
 W() { cygpath -m "$1"; }
 
+# LF checkouts (run #1 root cause): the Windows runner's git converts text
+# files to CRLF by default, but the patches in patches/ are pinned LF (see
+# .gitattributes) — a CRLF checkout would make git apply fail. SDL gets
+# three patches applied below, so its checkout must be LF.
 fetch() { # name url tag
     if [ ! -d "$SRC/$1" ]; then
-        git -c advice.detachedHead=false clone -q --depth 1 --branch "$3" "$2" "$SRC/$1"
+        git -c advice.detachedHead=false -c core.autocrlf=false clone -q --depth 1 --branch "$3" "$2" "$SRC/$1"
     fi
 }
 build() { # name srcdir [cmake args...]
