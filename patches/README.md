@@ -60,6 +60,31 @@ here is submitted upstream.
   drivers declare variables after statements in 12 places. Moves those
   declarations to the top of their blocks, changing no logic.
 
+## libarchive patches (v3.8.9, applied by `build-deps.sh`)
+
+- **libarchive-ps4-no-gc-sections.patch** — `CMakeLists.txt` (run #3):
+  libarchive appends `-Wl,--gc-sections` to `CMAKE_EXE_LINKER_FLAGS`
+  (and `CMAKE_SHARED_LINKER_FLAGS`) for Clang, but our toolchain invokes
+  `ld.lld` directly, not via the compiler driver, and `ld.lld` rejects
+  the `-Wl,` prefix (`ld.lld: error: unknown argument
+  '-Wl,--gc-sections'`). Every `try_compile` link therefore fails, so
+  the header checks stay empty and CMake's `check_type_size` test
+  programs include no headers at all — every type check fails and
+  configure aborts at `pid_t doesn't exist on this platform?`
+  (CMakeLists.txt:1786). The patch wraps the two lines in `IF(NOT PS4)`
+  (PS4 is set by the toolchain file, same convention as the SDL
+  force-drivers patch) and keeps the harmless `-ffunction-sections
+  -fdata-sections` compile flags.
+- **libarchive-ps4-no-disk-h.patch** — `libarchive/archive_read_open_
+  filename.c` (run #3, found while building the patched tree): clang
+  predefines `__FreeBSD__` for the `x86_64-pc-freebsd12-elf` target, so
+  the file includes `<sys/disk.h>`, which does not exist in the OpenOrbis
+  sysroot (`fatal error: 'sys/disk.h' file not found`). The
+  `DIOCGMEDIASIZE` probe is meaningless on PS4 (no raw disk devices;
+  LibreSprite only reads regular files, which take the `S_ISREG` branch
+  above it), so the three FreeBSD guards (include, `mediasize` variable,
+  ioctl branch) gain `&& !defined(__PS4__)`. No-op off PS4.
+
 ## Rules (from the Solarus port)
 
 - The deps cache key hashes `build-deps.sh`, `cmake/ps4-toolchain.cmake`,

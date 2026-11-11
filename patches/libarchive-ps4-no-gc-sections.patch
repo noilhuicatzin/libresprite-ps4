@@ -1,0 +1,22 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7cb9276..62e75d0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -148,8 +148,15 @@ IF (CMAKE_C_COMPILER_ID MATCHES "^GNU$" OR
+     # Place the functions and data into separate sections, allowing the linker
+     # to garbage collect the unused ones.
+     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
+-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+-    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
++    # PS4 (LibreSprite run #3): the OpenOrbis toolchain invokes ld.lld
++    # directly, not via the compiler driver, and ld.lld rejects the -Wl,
++    # prefix, so every try_compile link fails, every check_type_size fails,
++    # and configure aborts at "pid_t doesn't exist on this platform?".
++    # Skip the flag on PS4; nothing is lost (library only, tools are OFF).
++    IF(NOT PS4)
++      SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
++      SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
++    ENDIF()
+     # Printing the discarded section is "too much", so enable on demand.
+     #SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -Wl,--print-gc-sections")
+     #SET(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--print-gc-sections")
