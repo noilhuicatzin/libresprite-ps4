@@ -72,8 +72,19 @@ else
     echo "== host tinyxml2 (cached)"
 fi
 
-TINYXML2_LIB="$(ls "$HOST_PREFIX"/lib/libtinyxml2.a "$HOST_PREFIX"/lib/tinyxml2.lib 2>/dev/null | head -1)"
-[ -n "$TINYXML2_LIB" ] || { echo "ERROR: host tinyxml2 library not found under $HOST_PREFIX/lib"; exit 1; }
+TINYXML2_LIB="$(ls "$HOST_PREFIX"/lib/libtinyxml2.a "$HOST_PREFIX"/lib/tinyxml2.lib 2>/dev/null | head -1 || true)"
+# NOTE (run #7): the `|| true` above is load-bearing. Without it, when
+# neither file exists `ls` exits 2, `pipefail` propagates it through the
+# pipe, and `set -e` kills the script SILENTLY with exit code 2 — exactly
+# what run #7 showed (echo "== building host tinyxml2", then nothing, exit
+# 2, cl.exe never invoked). The explicit check below reports the problem.
+if [ -z "$TINYXML2_LIB" ]; then
+    echo "ERROR: host tinyxml2 library not found under $HOST_PREFIX/lib"
+    echo "--- contents of $HOST_PREFIX (run #7 diagnosis):"
+    find "$HOST_PREFIX" -type f 2>/dev/null | head -40 || true
+    echo "--- end of $HOST_PREFIX listing"
+    exit 1
+fi
 
 echo "== configuring GEN_ONLY host build"
 # NOTE: GEN_ONLY does NOT skip the SDL2/SDL2_image finds (they live in
