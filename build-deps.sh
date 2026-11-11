@@ -131,11 +131,6 @@ build libarchive "$SRC/libarchive" -DENABLE_LIBXML2=OFF -DENABLE_EXPAT=OFF \
     -DENABLE_ZLIB=ON -DENABLE_TAR=OFF -DENABLE_CPIO=OFF -DENABLE_CAT=OFF \
     -DENABLE_UNZIP=OFF -DENABLE_TEST=OFF
 
-fetch SDL_image https://github.com/libsdl-org/SDL_image.git release-2.8.8
-build SDL_image "$SRC/SDL_image" -DSDL2IMAGE_VENDORED=OFF -DSDL2IMAGE_SAMPLES=OFF \
-    -DSDL2IMAGE_PNG=ON -DSDL2IMAGE_JPG=ON -DSDL2IMAGE_TIF=OFF -DSDL2IMAGE_WEBP=OFF \
-    -DSDL2IMAGE_AVIF=OFF -DSDL2IMAGE_JXL=OFF
-
 # SDL 2.0.18, PacBrew fork, ps4 branch: the PS4 video/audio/joystick drivers
 # live here. -DPS4=ON activates them (SDL's own openorbis.cmake toolchain
 # sets the same variable; our ps4-toolchain.cmake sets CMAKE_SYSTEM_NAME PS4
@@ -176,6 +171,18 @@ if ! git -C "$SRC/SDL" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
 fi
 
 build SDL "$SRC/SDL" -DPS4=ON -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST=OFF -DSDL2_DISABLE_SDL2MAIN=ON -DSDL2_DISABLE_INSTALL=OFF -DSDL_X11=OFF -DSDL_WAYLAND=OFF -DSDL_OPENGL=OFF -DSDL_OPENGLES=OFF -DSDL_VULKAN=OFF -DSDL_KMSDRM=OFF -DSDL_RPI=OFF -DSDL_ALSA=OFF -DSDL_PULSEAUDIO=OFF -DSDL_PIPEWIRE=OFF -DSDL_JACK=OFF -DSDL_SNDIO=OFF -DSDL_OSS=OFF -DSDL_ESD=OFF -DSDL_ARTS=OFF -DSDL_NAS=OFF -DSDL_FUSIONSOUND=OFF -DSDL_DBUS=OFF -DSDL_IBUS=OFF -DSDL_FCITX=OFF -DSDL_LIBUDEV=OFF -DSDL_HIDAPI_LIBUSB=OFF -DSDL_RPATH=OFF -DSDL_DUMMYVIDEO=ON -DSDL_DUMMYAUDIO=ON -DSDL_DISKAUDIO=OFF -DSDL_OFFSCREEN=OFF -DSDL_LOADSO=OFF -DSDL_DIRECTFB=OFF -DSDL_SYSTEM_ICONV=OFF -DSDL_LIBICONV=OFF -DSDL_CCACHE=OFF -DSDL_FILESYSTEM=ON -DSDL_VIRTUAL_JOYSTICK=ON -DSDL_HIDAPI=ON -DSDL_HIDAPI_JOYSTICK=OFF -DSDL_WERROR=OFF
+
+# SDL_image AFTER SDL (run #4 root cause): SDL2_image 2.8.8's configure
+# runs sdl_find_sdl2(), which falls back to its private FindSDL2 module
+# (find_library SDL2_LIBRARY + find_path SDL2_INCLUDE_DIR) when no
+# SDL2Config.cmake is found. Both look in the prefix, so SDL must already
+# be built and installed there — building SDL_image first fails with
+# "Could NOT find PrivateSDL2 (missing: SDL2_LIBRARY SDL2_INCLUDE_DIR)".
+# Same order as the Solarus port.
+fetch SDL_image https://github.com/libsdl-org/SDL_image.git release-2.8.8
+build SDL_image "$SRC/SDL_image" -DSDL2IMAGE_VENDORED=OFF -DSDL2IMAGE_SAMPLES=OFF \
+    -DSDL2IMAGE_PNG=ON -DSDL2IMAGE_JPG=ON -DSDL2IMAGE_TIF=OFF -DSDL2IMAGE_WEBP=OFF \
+    -DSDL2IMAGE_AVIF=OFF -DSDL2IMAGE_JXL=OFF
 
 # pixman 0.42.2, VENDORED in the LibreSprite tree (third_party/pixman):
 # no fetch — prepare-sources.sh already cloned the tree and applied the
