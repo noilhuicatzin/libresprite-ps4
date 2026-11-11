@@ -116,6 +116,14 @@ cmake.org mirror fallback — both return 200).
    one ever appears, the pkg build fails loudly instead of dropping it.
 8. **`sys/param.h`**: `fs_unix.h` does not include it (`MAXPATHLEN` is
    `#define`d locally), so no dependency on the toolchain having it.
+9. **create-gp4 hardcodes `<rootdir>`**: the tool always writes the
+   template rootdir (sce_sys/about, sce_module,
+   assets/{audio,fonts,images,misc,videos}) and never derives
+   directories from `--files`. PkgTool's `BuildFSTree` looks up every
+   file's parent dir in `<rootdir>`, so any file under `data/` crashed
+   `pkg_build` with "Sequence contains no elements" (run #13).
+   `package.sh` now runs `scripts/fix-gp4-rootdir.py` after
+   `create-gp4` to insert the missing dirs from the file list.
 
 ## Cache rules
 
