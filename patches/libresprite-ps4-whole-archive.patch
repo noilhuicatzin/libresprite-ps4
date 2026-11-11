@@ -1,0 +1,18 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 9b33250..b43f00e 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -25,7 +25,12 @@ endif(MSVC)
+ # Directories where .h files can be found
+ include_directories(. .. ../third_party ../third_party/observable)
+ 
+-if((UNIX AND NOT APPLE) OR (WIN32 AND NOT MSVC))
++if(PS4)
++  # ld.lld is invoked directly on PS4, so the -Wl, driver prefix would
++  # reach the linker raw ("unknown argument"). Use bare linker options.
++  set(KEEP_INJECTIONS_BEGIN "--whole-archive")
++  set(KEEP_INJECTIONS_END "--no-whole-archive")
++elseif((UNIX AND NOT APPLE) OR (WIN32 AND NOT MSVC))
+   set(KEEP_INJECTIONS_BEGIN "-Wl,--whole-archive")
+   set(KEEP_INJECTIONS_END "-Wl,--no-whole-archive")
+ endif()

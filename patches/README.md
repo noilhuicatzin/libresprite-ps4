@@ -87,6 +87,19 @@ here is submitted upstream.
   `QuickJSInterpreter.cpp:666` already has the `type_index` on the left
   (`base != typeid(void)`), and the rest compare two `type_info`s or
   only use `.name()` / `.hash_code()`.
+- **libresprite-ps4-whole-archive.patch** — `src/CMakeLists.txt` (run
+  #10): the `KEEP_INJECTIONS_BEGIN/END` pair wraps the app libraries
+  with `-Wl,--whole-archive` / `-Wl,--no-whole-archive` on UNIX, but
+  our toolchain invokes `ld.lld` directly, not via the compiler driver,
+  and `ld.lld` rejects the `-Wl,` prefix (`ld.lld: error: unknown
+  argument '-Wl,--whole-archive'`, at the final link [785/785] — after
+  all 785 targets compiled). Same class of bug as the libarchive
+  `-Wl,--gc-sections` fix in run #3. The patch adds a `PS4` arm before
+  the UNIX arm that sets the bare linker options `--whole-archive` /
+  `--no-whole-archive` instead (verified: the bare options link a real
+  PS4 .elf with the toolchain's `link.x` script and `crt1.o`; the
+  `-Wl,` forms reproduce the exact CI errors). The `PS4` variable is
+  set by the toolchain file, same convention as the other patches.
 
 ## SDL patches (copied verbatim from the Solarus port)
 
