@@ -1,0 +1,26 @@
+diff --git a/third_party/delta/JSON.hpp b/third_party/delta/JSON.hpp
+index 9221da2..518dad4 100644
+--- a/third_party/delta/JSON.hpp
++++ b/third_party/delta/JSON.hpp
+@@ -406,7 +406,9 @@ public:
+         explicit operator std::shared_ptr<T> () const {
+             auto ptr = std::get_if<NativeRef>(&value);
+             if (!ptr) return {};
+-            if (typeid(T) != ptr->second) {
++            // PS4: compare two type_index values; type_info != type_index
++            // does not compile on this libc++ (see patches/README.md).
++            if (std::type_index(typeid(T)) != ptr->second) {
+                 std::cout << "Type mismatch in native value access: requested " << typeid(T).name() << " but actual type is " << ptr->second.name() << std::endl;
+                 throw std::runtime_error{"Type mismatch"};
+                 return {};
+@@ -418,7 +420,9 @@ public:
+         std::shared_ptr<T> asNative() const {
+             auto ptr = std::get_if<NativeRef>(&value);
+             if (!ptr) return {};
+-            if (typeid(T) != ptr->second) {
++            // PS4: compare two type_index values; type_info != type_index
++            // does not compile on this libc++ (see patches/README.md).
++            if (std::type_index(typeid(T)) != ptr->second) {
+                 return {};
+             }
+             return std::static_pointer_cast<T>(ptr->first);

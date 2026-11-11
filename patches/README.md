@@ -67,6 +67,26 @@ here is submitted upstream.
   `__FreeBSD__` sites in the file need nothing: line 75472 only
   typedefs `sig_t` / declares `environ`, and line 79484 only sets the
   `OS_PLATFORM` string to `"freebsd"`.
+- **delta-ps4-typeindex.patch** — `third_party/delta/JSON.hpp` (run #9):
+  `Value::operator std::shared_ptr<T>` and `Value::asNative<T>` compare
+  `typeid(T)` (a `const std::type_info`) with `ptr->second` (a
+  `std::type_index`, the second half of `NativeRef`) with `!=`, and this
+  libc++ has no viable `operator!=` for that pair: the only candidates
+  are the member `operator!=` of `type_info` (the right-hand side cannot
+  convert to `type_info`) and the member `operator!=` of `type_index`
+  (only usable when the `type_index` is the left operand). The mixed
+  comparison is not valid pre-C++20 at all (verified: g++ rejects it in
+  C++17 mode); in C++20 it only compiles where operator rewriting finds
+  a path, and libstdc++ provides one because its `type_index` declares
+  `operator<=>`, while this libc++'s `type_index` declares only the six
+  classic relational member operators and no `<=>`. The patch wraps the
+  left side in both places (lines 409, 421): `std::type_index(typeid(T))
+  != ptr->second` — same semantics (`type_index::operator!=` compares
+  the underlying `type_info`s), both operands now the same type. The
+  other `typeid` uses in the vendored delta code need nothing:
+  `QuickJSInterpreter.cpp:666` already has the `type_index` on the left
+  (`base != typeid(void)`), and the rest compare two `type_info`s or
+  only use `.name()` / `.hash_code()`.
 
 ## SDL patches (copied verbatim from the Solarus port)
 
