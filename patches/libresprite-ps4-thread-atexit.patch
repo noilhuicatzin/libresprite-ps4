@@ -1,0 +1,124 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 9b33250..0642eb6 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -112,8 +112,16 @@ if(WIN32)
+     main/settings.manifest)
+ endif()
+ 
++if(PS4)
++  # OpenOrbis libc has no __cxa_thread_atexit_impl (run #12): the
++  # thread_local destructors in third_party/httplib need it, so the
++  # implementation in main/ps4_thread_atexit.cpp joins the executable.
++  set(ps4_main_sources main/ps4_thread_atexit.cpp)
++endif()
++
+ add_executable(libresprite WIN32
+   main/main.cpp
++  ${ps4_main_sources}
+   ${win32_resources}
+   ${x11_resources})
+ 
+diff --git a/src/main/ps4_thread_atexit.cpp b/src/main/ps4_thread_atexit.cpp
+new file mode 100644
+index 0000000..6997018
+--- /dev/null
++++ b/src/main/ps4_thread_atexit.cpp
+@@ -0,0 +1,97 @@
++// LibreSprite
++// Copyright (C) 2021-2026  LibreSprite contributors
++//
++// This program is free software; you can redistribute it and/or modify
++// it under the terms of the GNU General Public License version 2 as
++// published by the Free Software Foundation.
++//
++// PS4-only file (added to the executable target under if(PS4) in
++// src/CMakeLists.txt, run #12).
++//
++// OpenOrbis libc does not provide __cxa_thread_atexit_impl, the
++// platform hook that libc++'s __cxa_thread_atexit() calls to register
++// the destructor of a thread_local object. Any translation unit with a
++// thread_local with a non-trivial destructor pulls
++// cxa_thread_atexit.cpp.o out of libc++.a — here that is
++// third_party/httplib/httplib.cpp (thread_local std::regex,
++// unordered_set, std::set and the mt19937 engine) — and the final link
++// of bin/libresprite.elf dies on this one undefined symbol:
++//
++//   ld.lld: error: undefined symbol: __cxa_thread_atexit_impl
++//   >>> referenced by cxa_thread_atexit.cpp
++//   >>>               cxa_thread_atexit.cpp.o:(__cxa_thread_atexit)
++//   >>>               in archive .../lib/libc++.a
++//
++// Implement it on top of pthread keys, which libkernel does provide
++// (pthread_key_create/getspecific/setspecific are in -lkernel, already
++// in the base libs). Each thread keeps a singly-linked list of
++// (destructor, object) pairs in one pthread key; the key destructor
++// runs the list LIFO at thread exit, matching the C++ rule that
++// thread_local objects are destroyed in reverse order of construction.
++// dso_handle is ignored: the binary is statically linked, nothing is
++// ever dlclose()d.
++//
++// Why not a stub that just returns 0: httplib runs a std::thread per
++// connection and its thread_locals (compiled std::regexes, sets) would
++// leak on every connection thread exit. The key-based version costs
++// ~70 lines and actually runs the destructors.
++
++#include <pthread.h>
++#include <stdlib.h>
++
++namespace {
++
++// One registered thread_local destructor.
++struct DtorNode {
++  void (*dtor)(void*);
++  void* obj;
++  DtorNode* next;
++};
++
++pthread_key_t g_key;
++pthread_once_t g_once = PTHREAD_ONCE_INIT;
++bool g_key_ok = false;
++
++// Runs the registered destructors for the exiting thread, LIFO:
++// repeatedly pops the head of the list, so a destructor that
++// registers another thread_local is destroyed next (it was constructed
++// last). When the list is empty the key is NULL and the pthread
++// implementation will not invoke this destructor again.
++void run_dtors(void* head) {
++  pthread_setspecific(g_key, head);
++  for (;;) {
++    DtorNode* node = static_cast<DtorNode*>(pthread_getspecific(g_key));
++    if (!node)
++      break;
++    // Remove the node from the list before running its destructor, so
++    // a new registration during the destructor prepends to the
++    // remaining list and is destroyed first.
++    pthread_setspecific(g_key, node->next);
++    node->dtor(node->obj);
++    free(node);
++  }
++}
++
++void make_key() {
++  g_key_ok = (pthread_key_create(&g_key, run_dtors) == 0);
++}
++
++} // namespace
++
++extern "C" int __cxa_thread_atexit_impl(void (*dtor)(void*), void* obj,
++                                         void* dso_handle) {
++  (void)dso_handle; // static binary: nothing is ever unloaded
++  if (pthread_once(&g_once, make_key) != 0 || !g_key_ok)
++    return -1;
++  DtorNode* node = static_cast<DtorNode*>(malloc(sizeof(DtorNode)));
++  if (!node)
++    return -1;
++  node->dtor = dtor;
++  node->obj = obj;
++  node->next = static_cast<DtorNode*>(pthread_getspecific(g_key));
++  if (pthread_setspecific(g_key, node) != 0) {
++    free(node);
++    return -1;
++  }
++  return 0;
++}

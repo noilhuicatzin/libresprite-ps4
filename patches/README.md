@@ -100,6 +100,31 @@ here is submitted upstream.
   PS4 .elf with the toolchain's `link.x` script and `crt1.o`; the
   `-Wl,` forms reproduce the exact CI errors). The `PS4` variable is
   set by the toolchain file, same convention as the other patches.
+- **libresprite-ps4-thread-atexit.patch** — `src/CMakeLists.txt` + new
+  file `src/main/ps4_thread_atexit.cpp` (run #12): OpenOrbis libc does
+  not provide `__cxa_thread_atexit_impl`, the platform hook that
+  libc++'s `__cxa_thread_atexit()` calls to register the destructor of
+  a `thread_local` object, so the final link [785/785] dies on this one
+  undefined symbol (after all 785 targets compiled). The only TU with a
+  `thread_local` with a non-trivial destructor is
+  `third_party/httplib/httplib.cpp` (`thread_local std::regex` /
+  `unordered_set` / `std::set` / mt19937 engine); it is pulled in via
+  `libhttp-lib.a`. The patch adds the implementation to the
+  `libresprite` executable target under `if(PS4)` (the `PS4` variable is
+  set by the toolchain file, same convention as the other patches). The
+  implementation is a real one, not a stub: a per-thread list of
+  (destructor, object) pairs kept in one pthread key (key functions are
+  in `-lkernel`, already in the base libs), run LIFO at thread exit —
+  a stub returning 0 would leak the compiled regexes/sets on every
+  httplib connection thread exit. Verified: the exact CI error was
+  reproduced with the real toolchain (minimal TU with a `thread_local
+  std::string`, CI-faithful `ld.lld` command, exit 1); with the new
+  object the same link exits 0 with a valid PS4 .elf; the destructor
+  order (LIFO, including a destructor that registers another
+  `thread_local`) was verified with a host-side run of the same file.
+  `dso_handle` is ignored: the binary is statically linked, nothing is
+  ever `dlclose()`d. This patch does NOT touch `build-deps.sh`, so the
+  deps cache is preserved for the run that tests it.
 
 ## SDL patches (copied verbatim from the Solarus port)
 
