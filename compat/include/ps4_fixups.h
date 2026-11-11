@@ -22,4 +22,26 @@ typedef unsigned short mode_t;
 #define __DEFINED_mode_t
 #endif
 
+/* The OpenOrbis headers do not declare the BSD file-flags functions, even
+ * though libkernel.so exports chflags/fchflags (lchflags does not exist).
+ * Without a declaration, Clang 18 errors on the implicit function
+ * declaration whenever code calls them under HAVE_CHFLAGS/HAVE_FCHFLAGS
+ * (configure sets those when it links against libkernel). Note: with these
+ * declarations present, CMake's own check_function_exists test fails on
+ * conflicting types (it declares `char chflags();`), so a fresh configure
+ * reports the functions absent and callers take their fallback path — also
+ * fine. Declare them here so either outcome builds; u_long is unsigned long
+ * on PS4. */
+#if !defined(__ASSEMBLER__)
+#ifdef __cplusplus
+extern "C" {
+#endif
+int chflags(const char *, unsigned long);
+int fchflags(int, unsigned long);
+int lchflags(const char *, unsigned long);
+#ifdef __cplusplus
+}
+#endif
+#endif
+
 #endif /* PS4_FIXUPS_H */
