@@ -167,6 +167,9 @@ jobs:
             libresprite-ps4/build-host/CMakeFiles/CMakeError.log
             libresprite-ps4/build-sdl-renderer-smoke/CMakeFiles/CMakeOutput.log
             libresprite-ps4/build-sdl-renderer-smoke/CMakeFiles/CMakeError.log
+            libresprite-ps4/host-tinyxml2.configure.log
+            libresprite-ps4/host-tinyxml2.build.log
+            libresprite-ps4/host-tinyxml2.install.log
             libresprite-ps4/host-gen.configure.log
             libresprite-ps4/host-gen.build.log
           retention-days: 14
