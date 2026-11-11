@@ -91,5 +91,13 @@ if [ "${SKIP_DATA:-0}" != "1" ]; then
 fi
 "$BIN/create-gp4.exe" -out pkg.gp4 --content-id="$CONTENT_ID" --files "$FILES"
 
+# create-gp4.exe hardcodes <rootdir> to its template (sce_sys/about,
+# sce_module, assets/{audio,fonts,images,misc,videos}) and never derives
+# directories from --files. PkgTool's BuildFSTree looks up every file's
+# parent dir in <rootdir>, so any file under data/ (or any other dir
+# outside the template) crashes pkg_build with "Sequence contains no
+# elements" (run #13). Fix <rootdir> up from the file list first.
+python3 "$HERE/scripts/fix-gp4-rootdir.py" pkg.gp4
+
 "$P" pkg_build pkg.gp4 "$(cygpath -m "$OUT")"
 ls -la "$OUT"
