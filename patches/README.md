@@ -45,6 +45,28 @@ here is submitted upstream.
   find it. The vendored CMakeLists generates an empty `pixman-config.h`
   and a `pixman-version.h` (0.42.2); the defines come from the command
   line, as upstream does.
+- **quickjs-ps4-malloc-np.patch** — `third_party/quickjs-amalgam/
+  quickjs-amalgam.c` (run #8, found while building the patched tree):
+  clang predefines `__FreeBSD__` for the `x86_64-pc-freebsd12-elf`
+  target, so the file takes the FreeBSD branch and includes
+  `<malloc_np.h>`, which does not exist in the OpenOrbis sysroot
+  (`fatal error: 'malloc_np.h' file not found`, line 106). The patch
+  adds a `__PS4__` arm before it that includes newlib's `<malloc.h>`
+  instead (which declares the same `malloc_usable_size()` — verified
+  present in both `libc.a` and `libSceLibcInternal.so`) and adds
+  `__PS4__` to the `js__malloc_usable_size()` arm that calls it (without
+  that second hunk the code would compile but silently report every
+  allocation as size 0, so QuickJS's GC would never trigger on memory
+  pressure). Same compile also surfaced a second missing FreeBSD-ism:
+  `js_os_ttyGetWinSize()` calls `ioctl(fd, TIOCGWINSZ, &ws)`, but the
+  sysroot declares `struct winsize` and `ioctl()` with no `TIOCGWINSZ`
+  request code — the patch defines it from `_IOR('t', 104, struct
+  winsize)` (the FreeBSD spelling; `_IOR` is in the sysroot's
+  `bits/ioctl.h`). There is no terminal on PS4, so the call can only
+  fail and the function returns null, as intended. The other two
+  `__FreeBSD__` sites in the file need nothing: line 75472 only
+  typedefs `sig_t` / declares `environ`, and line 79484 only sets the
+  `OS_PLATFORM` string to `"freebsd"`.
 
 ## SDL patches (copied verbatim from the Solarus port)
 

@@ -1,0 +1,39 @@
+diff --git a/third_party/quickjs-amalgam/quickjs-amalgam.c b/third_party/quickjs-amalgam/quickjs-amalgam.c
+index 2c86a5e..4b362b5 100644
+--- a/third_party/quickjs-amalgam/quickjs-amalgam.c
++++ b/third_party/quickjs-amalgam/quickjs-amalgam.c
+@@ -102,6 +102,11 @@ extern "C" {
+ #include <malloc/malloc.h>
+ #elif defined(__linux__) || defined(__ANDROID__) || defined(__CYGWIN__) || defined(__GLIBC__)
+ #include <malloc.h>
++#elif defined(__PS4__)
++/* PS4: clang predefines __FreeBSD__ for the x86_64-pc-freebsd12-elf
++ * target, but <malloc_np.h> does not exist in the OpenOrbis sysroot.
++ * The same malloc_usable_size() is declared by newlib's <malloc.h>. */
++#include <malloc.h>
+ #elif defined(__FreeBSD__)
+ #include <malloc_np.h>
+ #elif defined(_WIN32)
+@@ -633,7 +638,7 @@ static inline size_t js__malloc_usable_size(const void *ptr)
+     return malloc_size(ptr);
+ #elif defined(_WIN32)
+     return _msize((void *)ptr);
+-#elif defined(__linux__) || defined(__ANDROID__) || defined(__CYGWIN__) || defined(__FreeBSD__) || defined(__GLIBC__)
++#elif defined(__linux__) || defined(__ANDROID__) || defined(__CYGWIN__) || defined(__FreeBSD__) || defined(__GLIBC__) || defined(__PS4__)
+     return malloc_usable_size((void *)ptr);
+ #else
+     return 0;
+@@ -75454,6 +75459,13 @@ JS_EXTERN void js_std_set_worker_new_context_func(JSContext *(*func)(JSRuntime *
+ #define chdir _chdir
+ #else
+ #include <sys/ioctl.h>
++#if defined(__PS4__) && !defined(TIOCGWINSZ)
++/* PS4: the OpenOrbis sysroot declares struct winsize and ioctl() but no
++ * TIOCGWINSZ request code (there is no terminal on PS4, so
++ * js_os_ttyGetWinSize() can only return null — this just has to compile).
++ * Use the FreeBSD request code, as for the x86_64-pc-freebsd12-elf target. */
++#define TIOCGWINSZ _IOR('t', 104, struct winsize)
++#endif
+ #include <poll.h>
+ #if !defined(__wasi__) && !defined(__3DS__)
+ #include <dlfcn.h>
