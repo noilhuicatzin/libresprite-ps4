@@ -66,9 +66,17 @@ build libpng "$SRC/libpng" -DPNG_SHARED=OFF -DPNG_STATIC=ON -DPNG_TESTS=OFF -DPN
 # libjpeg-turbo 3.1.4: static only, no SIMD, no Java, no tests. WITH_JPEG8
 # keeps the libjpeg v8 API the app expects; WITH_TURBOJPEG keeps the
 # TurboJPEG API available (the app only uses the plain jpeg API).
+# WITH_TOOLS=OFF (run #2 root cause): with tools on, upstream's install
+# rules do install(PROGRAMS ${DIR}/tjbench-static${EXE} ...) where EXE comes
+# from the generic CMAKE_EXECUTABLE_SUFFIX — which CMake resets to "" for
+# the PS4 system — while the per-language suffix from our toolchain makes
+# the built binary tjbench-static.elf, so install fails with "file INSTALL
+# cannot find .../tjbench-static". The CLI tools (cjpeg/djpeg/jpegtran/
+# tjbench) are not needed on PS4; only the libraries matter.
 fetch libjpeg-turbo https://github.com/libjpeg-turbo/libjpeg-turbo.git 3.1.4
 build libjpeg-turbo "$SRC/libjpeg-turbo" -DENABLE_SHARED=OFF -DENABLE_STATIC=ON \
-    -DWITH_SIMD=OFF -DWITH_JAVA=OFF -DWITH_TURBOJPEG=ON -DWITH_JPEG8=ON -DWITH_TESTS=OFF
+    -DWITH_SIMD=OFF -DWITH_JAVA=OFF -DWITH_TURBOJPEG=ON -DWITH_JPEG8=ON -DWITH_TESTS=OFF \
+    -DWITH_TOOLS=OFF
 
 # giflib 5.2.2 (tarball, no git repo): built with the giflib-cmake wrapper.
 # Debian pool first (verified: same pristine tarball, fast mirror);
