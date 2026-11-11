@@ -87,6 +87,9 @@ jobs:
         working-directory: libresprite-ps4
         run: bash build-deps.sh
 
+      - name: Setup MSVC for host gen
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build host gen
         working-directory: libresprite-ps4
         run: bash build-gen-host.sh
