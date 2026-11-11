@@ -22,11 +22,11 @@
 #     no libjpeg is needed by SDL_image itself).
 #   - pixman: software rasterizer used by the app's render code
 #     (find_library pixman). Built from the copy VENDORED in the
-#     LibreSprite tree (third_party/pixman, 0.42.2, upstream's own
-#     CMakeLists.txt) with the PS4 patch applied by prepare-sources.sh
-#     (PIXMAN_NO_TLS instead of pthreads, no OpenMP, plus install rules).
-#     No separate download, and the version is exactly the one the app
-#     was developed against.
+#     LibreSprite tree ($HERE/../libresprite/third_party/pixman, 0.42.2,
+#     upstream's own CMakeLists.txt) with the PS4 patch applied by
+#     prepare-sources.sh (PIXMAN_NO_TLS instead of pthreads, no OpenMP,
+#     plus install rules). No separate download, and the version is
+#     exactly the one the app was developed against.
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 source "$HERE/env.sh"
@@ -185,10 +185,14 @@ build SDL_image "$SRC/SDL_image" -DSDL2IMAGE_VENDORED=OFF -DSDL2IMAGE_SAMPLES=OF
     -DSDL2IMAGE_AVIF=OFF -DSDL2IMAGE_JXL=OFF
 
 # pixman 0.42.2, VENDORED in the LibreSprite tree (third_party/pixman):
-# no fetch — prepare-sources.sh already cloned the tree and applied the
-# PS4 patch (PIXMAN_NO_TLS, no OpenMP, install rules). Its own
-# CMakeLists.txt is upstream's; the build() helper configures it with the
-# PS4 toolchain like any other dep.
-build pixman "$SRC/libresprite/third_party/pixman"
+# no fetch — prepare-sources.sh already cloned the tree (sibling
+# $HERE/../libresprite, same convention as configure.sh and
+# build-gen-host.sh) and applied the PS4 patch (PIXMAN_NO_TLS, no OpenMP,
+# install rules). Its own CMakeLists.txt is upstream's; the build()
+# helper configures it with the PS4 toolchain like any other dep.
+# (run #5 root cause: this used to point at $SRC/libresprite/...,
+# i.e. deps/src/libresprite — but LibreSprite is never cloned there,
+# so CMake failed with "The source directory ... does not exist".)
+build pixman "$HERE/../libresprite/third_party/pixman"
 
 echo "ALL DEPS OK"
