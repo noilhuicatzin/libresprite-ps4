@@ -101,6 +101,29 @@ build tinyxml2 "$SRC/tinyxml2" -Dtinyxml2_BUILD_TESTING=OFF
 # other optional backend is OFF so no extra dependency is pulled in.
 # The tar/cpio/cat/unzip tools are OFF too (library only).
 fetch libarchive https://github.com/libarchive/libarchive.git v3.8.9
+
+# PS4 patch: skip -Wl,--gc-sections (run #3 root cause). libarchive appends
+# it to CMAKE_EXE_LINKER_FLAGS for Clang, but our toolchain invokes ld.lld
+# directly (not via the compiler driver) and ld.lld rejects the -Wl,
+# prefix, so every try_compile link fails, every check_type_size fails
+# (HAVE_SYS_TYPES_H/HAVE_STDINT_H/HAVE_STDDEF_H stay empty, so the test
+# programs include no headers at all), and configure aborts at
+# "pid_t doesn't exist on this platform?". Idempotent like the SDL patches.
+PATCH="$HERE/patches/libarchive-ps4-no-gc-sections.patch"
+if ! git -C "$SRC/libarchive" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
+    git -C "$SRC/libarchive" apply "$PATCH"
+fi
+
+# PS4 patch: <sys/disk.h> does not exist in the OpenOrbis sysroot, but
+# clang predefines __FreeBSD__ for the freebsd12 target, so
+# archive_read_open_filename.c includes it and the build fails. The
+# disk-probing ioctl is meaningless on PS4 (no raw disk devices), so the
+# FreeBSD branch is skipped there. Idempotent like the SDL patches.
+PATCH="$HERE/patches/libarchive-ps4-no-disk-h.patch"
+if ! git -C "$SRC/libarchive" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
+    git -C "$SRC/libarchive" apply "$PATCH"
+fi
+
 build libarchive "$SRC/libarchive" -DENABLE_LIBXML2=OFF -DENABLE_EXPAT=OFF \
     -DENABLE_LZMA=OFF -DENABLE_ZSTD=OFF -DENABLE_BZip2=OFF -DENABLE_LZ4=OFF \
     -DENABLE_LIBB2=OFF -DENABLE_NETTLE=OFF -DENABLE_MBEDTLS=OFF -DENABLE_OPENSSL=OFF \
