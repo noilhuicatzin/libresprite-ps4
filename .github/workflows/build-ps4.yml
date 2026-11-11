@@ -116,6 +116,11 @@ jobs:
           cmake --build build-sdl-renderer-smoke
           ls -lh build-sdl-renderer-smoke/sdl-renderer-smoke.elf
 
+      - name: Setup Python for packaging
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Package app
         working-directory: libresprite-ps4
         run: |
