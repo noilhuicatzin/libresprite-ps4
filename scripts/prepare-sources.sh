@@ -13,10 +13,11 @@
 #      third_party/pixman/CMakeLists.txt). If a future commit moves one of
 #      them, this script fails loudly instead of silently building the
 #      wrong thing.
-#   4. Applies the six LibreSprite PS4 patches (idempotent): X11 block,
+#   4. Applies the seven LibreSprite PS4 patches (idempotent): X11 block,
 #      PS4 paths, FindSDL2 pkg-config, vendored pixman flags + install
 #      rules, quickjs malloc_np.h / TIOCGWINSZ, delta type_index
-#      comparison. See patches/README.md for what each patch does and why.
+#      comparison, whole-archive link flags. See patches/README.md for
+#      what each patch does and why.
 #
 # It is idempotent: if <workspace>/libresprite already exists it reuses it
 # (deletes it first only if --clean is passed). It never downloads game or
@@ -69,7 +70,7 @@ for f in src/app/resource_finder.cpp src/base/fs_unix.h src/gen/CMakeLists.txt t
 done
 
 echo "== applying PS4 source patches (idempotent)"
-for PATCH in "$HERE/patches/libresprite-ps4-x11.patch" "$HERE/patches/libresprite-ps4-paths.patch" "$HERE/patches/libresprite-ps4-find-sdl2-nopkgconfig.patch" "$HERE/patches/libresprite-ps4-pixman.patch" "$HERE/patches/quickjs-ps4-malloc-np.patch" "$HERE/patches/delta-ps4-typeindex.patch"; do
+for PATCH in "$HERE/patches/libresprite-ps4-x11.patch" "$HERE/patches/libresprite-ps4-paths.patch" "$HERE/patches/libresprite-ps4-find-sdl2-nopkgconfig.patch" "$HERE/patches/libresprite-ps4-pixman.patch" "$HERE/patches/quickjs-ps4-malloc-np.patch" "$HERE/patches/delta-ps4-typeindex.patch" "$HERE/patches/libresprite-ps4-whole-archive.patch"; do
     NAME="$(basename "$PATCH")"
     if git -C "$WORKSPACE/libresprite" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
         echo "   already applied: $NAME"
@@ -79,4 +80,4 @@ for PATCH in "$HERE/patches/libresprite-ps4-x11.patch" "$HERE/patches/libresprit
     fi
 done
 
-echo "== sources ready: $WORKSPACE/libresprite (6 PS4 patches applied)"
+echo "== sources ready: $WORKSPACE/libresprite (7 PS4 patches applied)"
