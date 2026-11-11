@@ -179,10 +179,18 @@ build SDL "$SRC/SDL" -DPS4=ON -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST=OFF -D
 # be built and installed there — building SDL_image first fails with
 # "Could NOT find PrivateSDL2 (missing: SDL2_LIBRARY SDL2_INCLUDE_DIR)".
 # Same order as the Solarus port.
+# (run #11 root cause: SDL2IMAGE_QOI defaults ON, and SDL_image 2.8.8's
+# IMG_qoi.c then defines the same global qoi_encode/qoi_decode as
+# LibreSprite's own qoi_format.cpp (vendored qoi.h) — with --whole-archive
+# both objects land in the link and ld.lld dies on duplicate symbols.
+# LibreSprite loads .qoi through its own FileFormat, never through
+# IMG_Load, so SDL_image's QOI codec is redundant here; OFF leaves
+# IMG_qoi.c as harmless stubs. NOTE: this change invalidates the deps
+# cache (build-deps.sh is hashed), so the next run rebuilds all 10 deps.)
 fetch SDL_image https://github.com/libsdl-org/SDL_image.git release-2.8.8
 build SDL_image "$SRC/SDL_image" -DSDL2IMAGE_VENDORED=OFF -DSDL2IMAGE_SAMPLES=OFF \
     -DSDL2IMAGE_PNG=ON -DSDL2IMAGE_JPG=ON -DSDL2IMAGE_TIF=OFF -DSDL2IMAGE_WEBP=OFF \
-    -DSDL2IMAGE_AVIF=OFF -DSDL2IMAGE_JXL=OFF
+    -DSDL2IMAGE_AVIF=OFF -DSDL2IMAGE_JXL=OFF -DSDL2IMAGE_QOI=OFF
 
 # pixman 0.42.2, VENDORED in the LibreSprite tree (third_party/pixman):
 # no fetch — prepare-sources.sh already cloned the tree (sibling
