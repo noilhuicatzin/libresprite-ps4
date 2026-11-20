@@ -101,7 +101,7 @@ index 0000000..3318a12
 +  }
 +}
 diff --git a/src/main/main.cpp b/src/main/main.cpp
-index af7eaec..50aee7d 100644
+index af7eaec..2af9472 100644
 --- a/src/main/main.cpp
 +++ b/src/main/main.cpp
 @@ -12,6 +12,7 @@
@@ -112,24 +112,17 @@ index af7eaec..50aee7d 100644
  #include "app/resource_finder.h"
  #include "app/send_crash.h"
  #include "base/exception.h"
-@@ -54,6 +55,16 @@ namespace {
+@@ -54,6 +55,9 @@ namespace {
  // Aseprite entry point. (Called from she library.)
  int app_main(int argc, char* argv[])
  {
-+  // PS4 diag: fresh log per run (see app/ps4_diag_log.h).
-+  {
-+    FILE* f = std::fopen("/data/libresprite.log", "w");
-+    if (f) {
-+      std::fprintf(f, "[diag] libresprite start\n");
-+      std::fclose(f);
-+    }
-+  }
++  // PS4 diag: the log is truncated in she::main (the earlier entry point).
 +  ps4_diag("app_main enter");
 +
    // Initialize the locale. Aseprite isn't ready to handle numeric
    // fields with other locales (e.g. we expect strings like "10.32" be
    // used in std::strtod(), not something like "10,32").
-@@ -69,13 +80,17 @@ int app_main(int argc, char* argv[])
+@@ -69,13 +73,17 @@ int app_main(int argc, char* argv[])
  
    try {
      static app::AppOptions options(argc, const_cast<const char**>(argv));
@@ -147,7 +140,7 @@ index af7eaec..50aee7d 100644
  
  	// Change the name of the memory dump file
  	{
-@@ -84,12 +99,16 @@ int app_main(int argc, char* argv[])
+@@ -84,12 +92,16 @@ int app_main(int argc, char* argv[])
  	    memoryDump.setFileName(filename);
  	}
  
@@ -164,3 +157,54 @@ index af7eaec..50aee7d 100644
  	return 0;
        } catch (std::exception& e) {
  	std::cerr << e.what() << '\n';
+diff --git a/src/she/sdl2/she.cpp b/src/she/sdl2/she.cpp
+index afc22fe..d91a858 100644
+--- a/src/she/sdl2/she.cpp
++++ b/src/she/sdl2/she.cpp
+@@ -17,6 +17,7 @@
+ #include "she/sdl2/sdl2_surface.h"
+ #include "she/common/system.h"
+ #include "she/logger.h"
++#include "app/ps4_diag_log.h"
+ 
+ #undef HAVE_STDINT_H
+ #if __has_include(<SDL2/SDL.h>)
+@@ -1430,6 +1431,18 @@ namespace she {
+ extern int app_main(int argc, char* argv[]);
+ 
+ int main(const int argc, char* argv[]) {
++  // PS4 diag: fresh log per run (see app/ps4_diag_log.h). Truncate here,
++  // the earliest entry point, so the log exists even if SDL_Init or
++  // IMG_Init hangs before app_main.
++  {
++    FILE* f = std::fopen("/data/libresprite.log", "w");
++    if (f) {
++      std::fprintf(f, "[diag] libresprite start\n");
++      std::fclose(f);
++    }
++  }
++  ps4_diag("she main enter");
++
+   // --batch and --shell never start the UI; use SDL's dummy video driver
+   // so no real display is needed. Keep a user-set SDL_VIDEODRIVER value.
+   for (int i = 1; i < argc; ++i) {
+@@ -1456,14 +1469,19 @@ int main(const int argc, char* argv[]) {
+   SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+ #endif
+ 
++  ps4_diag("SDL_Init begin");
+   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
+     std::cerr << "Critical: Could not initialize SDL2. Aborting." << std::endl;
+     return -1;
+   }
++  ps4_diag("SDL_Init ok");
++  ps4_diag("IMG_Init begin");
+   if (!IMG_Init(-1)) {
+     std::cerr << "Critical: Could not initialize SDL2_image (" << IMG_GetError() << "). Aborting." << std::endl;
+     return -2;
+   }
++  ps4_diag("IMG_Init ok");
+   SDL_EventState(SDL_FINGERMOTION, SDL_ENABLE);
++  ps4_diag("app_main begin");
+   return app_main(argc, argv);
+ }

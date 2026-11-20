@@ -126,20 +126,23 @@ here is submitted upstream.
   ever `dlclose()`d. This patch does NOT touch `build-deps.sh`, so the
   deps cache is preserved for the run that tests it.
 - **libresprite-ps4-diag-log.patch** — new file `src/app/ps4_diag_log.h`
-  + `src/main/main.cpp` + `src/app/app.cpp` (TEMPORARY, run #16): the
-  editor launches but stays on a black screen with no input response
-  (only the PS button works) and writes no log, so there is nothing to
-  read to see where it stops. This patch adds per-step startup
-  checkpoints that write one flushed line each to
-  `/data/libresprite.log` on the console: `app_main` enter,
-  `create_system` begin/ok, `App` ctor begin/ok, `initialize` begin/ok,
-  `run` begin/end, and inside `App::initialize` CoreModules, Modules,
-  LegacyModules, palette, MainWindow created, openWindow, gui done and
-  done. Each call opens/appends/closes the file, so no FILE* is shared
-  between translation units and no log-level or `she::log` setup is
-  needed; `app_main` truncates the file once at startup. Remove this
-  file and all `ps4_diag()` calls once the startup hang is fixed. This
-  patch does NOT touch `build-deps.sh`, so the deps cache is preserved.
+  + `src/main/main.cpp` + `src/app/app.cpp` + `src/she/sdl2/she.cpp`
+  (TEMPORARY, run #16, extended in run #17): the editor launches but
+  stays on a black screen with no input response (only the PS button
+  works) and writes no log, so there is nothing to read to see where it
+  stops. This patch adds per-step startup checkpoints that write one
+  flushed line each to `/data/libresprite.log` on the console. Run #16
+  logged from `app_main` on (create_system, App ctor, initialize
+  stages, run) — but the log never appeared, which proves the hang is
+  BEFORE `app_main`, in she's `main()`. Run #17 moves the log start to
+  she's `main()` (truncate + `she main enter`, then `SDL_Init` begin/ok,
+  `IMG_Init` begin/ok, `app_main` begin) so the log exists even if
+  `SDL_Init` or `IMG_Init` hangs; `IMG_Init` is the prime suspect (the
+  smoke test never called it). Each call opens/appends/closes the file,
+  so no FILE* is shared between translation units and no log-level or
+  `she::log` setup is needed. Remove this file and all `ps4_diag()`
+  calls once the startup hang is fixed. This patch does NOT touch
+  `build-deps.sh`, so the deps cache is preserved.
 
 ## SDL patches (copied verbatim from the Solarus port)
 
