@@ -157,7 +157,13 @@ here is submitted upstream.
   gpuAccel=1) and create_main_display ok — the hang moved past
   display creation, into the rest of init_module_gui. Run #20 adds
   checkpoints there: manager begin/ok, setLanguage begin/ok,
-  SkinTheme begin/ok, save_gui_config begin/ok. Each call
+  SkinTheme begin/ok, save_gui_config begin/ok. Run #20's log showed
+  manager ok, setLanguage ok, SkinTheme ok (theme created and scaled)
+  — the hang is after that, in CurrentTheme::set → regenerate →
+  onRegenerate (loadSheet/loadXml) or resetFontAllWidgets. Run #21
+  adds checkpoints there: CurrentTheme set regenerate begin/ok,
+  regenerate onRegenerate begin/ok and resetFontAllWidgets begin/ok,
+  onRegenerate loadSheet begin/ok and loadXml begin/ok. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang

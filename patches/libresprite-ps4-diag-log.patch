@@ -199,6 +199,42 @@ index 0000000..cbac782
 +    std::fclose(f);
 +  }
 +}
+diff --git a/src/app/ui/skin/skin_theme.cpp b/src/app/ui/skin/skin_theme.cpp
+index cc5cab0..8ccaf05 100644
+--- a/src/app/ui/skin/skin_theme.cpp
++++ b/src/app/ui/skin/skin_theme.cpp
+@@ -19,6 +19,7 @@
+ #include "app/modules/gui.h"
+ #include "app/modules/i18n.h"
+ #include "app/pref/preferences.h"
++#include "app/ps4_diag_log.h"
+ #include "app/resource_finder.h"
+ #include "app/ui/app_menuitem.h"
+ #include "app/ui/keyboard_shortcuts.h"
+@@ -215,15 +216,23 @@ void SkinTheme::onRegenerate()
+   if (pref.theme.selected.defaultValue() != pref.theme.selected()) {
+     auto skinId = pref.theme.selected();
+     try {
++      ps4_diag("onRegenerate loadSheet begin");
+       loadSheet(skinId);
++      ps4_diag("onRegenerate loadSheet ok");
+     } catch (const base::Exception&) {
+       loadSheet(pref.theme.selected.defaultValue());
+     }
++    ps4_diag("onRegenerate loadXml begin");
+     loadXml(pref.theme.selected.defaultValue());
++    ps4_diag("onRegenerate loadXml ok");
+     try { loadXml(skinId); } catch (const base::Exception&) {}
+   } else {
++    ps4_diag("onRegenerate loadSheet begin");
+     loadSheet(pref.theme.selected.defaultValue());
++    ps4_diag("onRegenerate loadSheet ok");
++    ps4_diag("onRegenerate loadXml begin");
+     loadXml(pref.theme.selected.defaultValue());
++    ps4_diag("onRegenerate loadXml ok");
+   }
+ }
+ 
 diff --git a/src/main/main.cpp b/src/main/main.cpp
 index af7eaec..2af9472 100644
 --- a/src/main/main.cpp
@@ -352,3 +388,39 @@ index afc22fe..d91a858 100644
 +  ps4_diag("app_main begin");
    return app_main(argc, argv);
  }
+diff --git a/src/ui/theme.cpp b/src/ui/theme.cpp
+index 8d6ea8e..d6ccf4f 100644
+--- a/src/ui/theme.cpp
++++ b/src/ui/theme.cpp
+@@ -18,6 +18,7 @@
+ #include "ui/theme.h"
+ #include "ui/view.h"
+ #include "ui/widget.h"
++#include "app/ps4_diag_log.h"
+ 
+ #include <cstring>
+ 
+@@ -41,9 +42,13 @@ void Theme::regenerate()
+   CursorType type = get_mouse_cursor();
+   set_mouse_cursor(kNoCursor);
+ 
++  ps4_diag("regenerate onRegenerate begin");
+   onRegenerate();
++  ps4_diag("regenerate onRegenerate ok");
+ 
++  ps4_diag("regenerate resetFontAllWidgets begin");
+   details::resetFontAllWidgets();
++  ps4_diag("regenerate resetFontAllWidgets ok");
+ 
+   // TODO We cannot reinitialize all widgets because this mess all
+   // child spacing, border, etc. But it could be good to change the
+@@ -61,7 +66,9 @@ void CurrentTheme::set(Theme* theme)
+   current_theme = theme;
+ 
+   if (current_theme) {
++    ps4_diag("CurrentTheme set regenerate begin");
+     current_theme->regenerate();
++    ps4_diag("CurrentTheme set regenerate ok");
+ 
+     Manager* manager = Manager::getDefault();
+     if (manager && !manager->theme())
