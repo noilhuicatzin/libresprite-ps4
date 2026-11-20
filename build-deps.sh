@@ -170,6 +170,20 @@ if ! git -C "$SRC/SDL" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
     git -C "$SRC/SDL" apply "$PATCH"
 fi
 
+# PS4 patch: Piglet config retry (LibreSprite smoke test, console run
+# 2026-11-19). PS4_PigletInit used ONE fixed Piglet memory config (system
+# 256 MiB / video 256 MiB, no flexible memory) and never checked whether it
+# yields an EGL display — SDL_CreateWindow then failed with "Could not get
+# EGL display" while Solarus' gl-smoke passed with the same SDL build.
+# SoH's Ps4Platform.cpp proves eglGetDisplay() is config-sensitive and
+# retries configs until one works. This patch mirrors SoH's candidate list
+# (first: system 128 / video 512 / flexible 236 MiB) and keeps the first
+# config whose eglGetDisplay() succeeds. Idempotent like the ones above.
+PATCH="$HERE/patches/sdl-ps4-piglet-config.patch"
+if ! git -C "$SRC/SDL" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
+    git -C "$SRC/SDL" apply "$PATCH"
+fi
+
 build SDL "$SRC/SDL" -DPS4=ON -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST=OFF -DSDL2_DISABLE_SDL2MAIN=ON -DSDL2_DISABLE_INSTALL=OFF -DSDL_X11=OFF -DSDL_WAYLAND=OFF -DSDL_OPENGL=OFF -DSDL_OPENGLES=OFF -DSDL_VULKAN=OFF -DSDL_KMSDRM=OFF -DSDL_RPI=OFF -DSDL_ALSA=OFF -DSDL_PULSEAUDIO=OFF -DSDL_PIPEWIRE=OFF -DSDL_JACK=OFF -DSDL_SNDIO=OFF -DSDL_OSS=OFF -DSDL_ESD=OFF -DSDL_ARTS=OFF -DSDL_NAS=OFF -DSDL_FUSIONSOUND=OFF -DSDL_DBUS=OFF -DSDL_IBUS=OFF -DSDL_FCITX=OFF -DSDL_LIBUDEV=OFF -DSDL_HIDAPI_LIBUSB=OFF -DSDL_RPATH=OFF -DSDL_DUMMYVIDEO=ON -DSDL_DUMMYAUDIO=ON -DSDL_DISKAUDIO=OFF -DSDL_OFFSCREEN=OFF -DSDL_LOADSO=OFF -DSDL_DIRECTFB=OFF -DSDL_SYSTEM_ICONV=OFF -DSDL_LIBICONV=OFF -DSDL_CCACHE=OFF -DSDL_FILESYSTEM=ON -DSDL_VIRTUAL_JOYSTICK=ON -DSDL_HIDAPI=ON -DSDL_HIDAPI_JOYSTICK=OFF -DSDL_WERROR=OFF
 
 # SDL_image AFTER SDL (run #4 root cause): SDL2_image 2.8.8's configure
