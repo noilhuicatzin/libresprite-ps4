@@ -1,0 +1,19 @@
+diff --git a/src/app/ui/skin/skin_theme.cpp b/src/app/ui/skin/skin_theme.cpp
+index f8faee5..146a5f7 100644
+--- a/src/app/ui/skin/skin_theme.cpp
++++ b/src/app/ui/skin/skin_theme.cpp
+@@ -2402,6 +2402,14 @@ std::shared_ptr<she::Font> SkinTheme::loadFont(const std::vector<std::string>& f
+       }
+       auto themeLower = base::string_to_lower(base::get_file_title(themeFont));
+       for (auto& dir : base::get_font_paths()) {
++        // PS4: the system font dirs (/usr/share/fonts, ~/.fonts, ...)
++        // do not exist on the console. Skip them here, without touching
++        // the FileSystemModule at all: its stat/hash lookups on those
++        // Unix paths are pure cost during startup, and the enumeration
++        // can never find a font there anyway. (On desktop, dirs that
++        // exist are still enumerated exactly as before.)
++        if (!base::is_directory(dir))
++          continue;
+         auto item = FileSystemModule::instance()->getFileItemFromPath(dir);
+         if (!item)
+           continue;

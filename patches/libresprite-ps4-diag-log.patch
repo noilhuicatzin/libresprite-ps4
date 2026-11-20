@@ -410,7 +410,7 @@ index afc22fe..d91a858 100644
 +  {
 +    FILE* f = std::fopen("/data/libresprite.log", "w");
 +    if (f) {
-+      std::fprintf(f, "[diag] libresprite start\n");
++      std::fprintf(f, "[diag] libresprite start build-24\n");
 +      std::fclose(f);
 +    }
 +  }
