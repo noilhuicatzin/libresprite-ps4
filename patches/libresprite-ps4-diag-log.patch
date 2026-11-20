@@ -200,7 +200,7 @@ index 0000000..cbac782
 +  }
 +}
 diff --git a/src/app/ui/skin/skin_theme.cpp b/src/app/ui/skin/skin_theme.cpp
-index cc5cab0..f496362 100644
+index cc5cab0..f8faee5 100644
 --- a/src/app/ui/skin/skin_theme.cpp
 +++ b/src/app/ui/skin/skin_theme.cpp
 @@ -19,6 +19,7 @@
@@ -235,7 +235,29 @@ index cc5cab0..f496362 100644
    }
  }
  
-@@ -320,16 +329,28 @@ void SkinTheme::loadXml(const std::string& skinId)
+@@ -278,7 +287,10 @@ void SkinTheme::loadFonts(const std::string& skinId)
+       while (rf.next()) {
+           paths.push_back(rf.filename());
+       }
++      ps4_diag(std::string("loadFonts rf done, paths=") + std::to_string(paths.size()));
++      ps4_diag("loadFonts loadFont begin");
+       m_defaultFont = loadFont(paths, 8);
++      ps4_diag("loadFonts loadFont ok");
+   }
+ 
+   {
+@@ -301,7 +313,10 @@ void SkinTheme::loadFonts(const std::string& skinId)
+       rf.includeDataDir("fonts/minifont.png");
+       while (rf.next())
+           paths.push_back(rf.filename());
++      ps4_diag(std::string("loadFonts mini rf done, paths=") + std::to_string(paths.size()));
++      ps4_diag("loadFonts mini loadFont begin");
+       m_miniFont = loadFont(paths, 8);
++      ps4_diag("loadFonts mini loadFont ok");
+   }
+ }
+ 
+@@ -320,16 +335,28 @@ void SkinTheme::loadXml(const std::string& skinId)
  {
    TRACE("SkinTheme::loadXml(%s)\n", skinId.c_str());
    // Load the skin XML

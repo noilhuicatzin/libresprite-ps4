@@ -172,7 +172,11 @@ here is submitted upstream.
   then installing the #21 .pkg fixed it. Run #22 adds checkpoints
   inside loadXml: findFile skin.xml begin/ok/not found, loadFonts
   begin/ok, loadSkinXml begin/ok, findFile theme.xml begin/ok/not
-  found, loadThemeXml begin/ok. Each call
+  found, loadThemeXml begin/ok. Run #22's log showed findFile
+  skin.xml ok and the hang in loadFonts (after "loadFonts begin").
+  Run #23 adds checkpoints inside loadFonts: rf done with the number
+  of paths found, loadFont begin/ok, for both the default font and
+  the mini font. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang
