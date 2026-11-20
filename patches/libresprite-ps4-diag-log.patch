@@ -200,7 +200,7 @@ index 0000000..cbac782
 +  }
 +}
 diff --git a/src/app/ui/skin/skin_theme.cpp b/src/app/ui/skin/skin_theme.cpp
-index cc5cab0..8ccaf05 100644
+index cc5cab0..f496362 100644
 --- a/src/app/ui/skin/skin_theme.cpp
 +++ b/src/app/ui/skin/skin_theme.cpp
 @@ -19,6 +19,7 @@
@@ -235,6 +235,35 @@ index cc5cab0..8ccaf05 100644
    }
  }
  
+@@ -320,16 +329,28 @@ void SkinTheme::loadXml(const std::string& skinId)
+ {
+   TRACE("SkinTheme::loadXml(%s)\n", skinId.c_str());
+   // Load the skin XML
++  ps4_diag("loadXml findFile skin.xml begin");
+   if (auto filename = findFile("skins/" + skinId + "/skin.xml")) {
++    ps4_diag("loadXml findFile skin.xml ok");
++    ps4_diag("loadXml loadFonts begin");
+     loadFonts(skinId);
++    ps4_diag("loadXml loadFonts ok");
++    ps4_diag("loadXml loadSkinXml begin");
+     loadSkinXml(*filename);
++    ps4_diag("loadXml loadSkinXml ok");
+     return;
+   }
++  ps4_diag("loadXml findFile skin.xml not found");
+ 
++  ps4_diag("loadXml findFile theme.xml begin");
+   if (auto filename = findFile("skins/" + skinId + "/theme.xml")) {
++    ps4_diag("loadXml findFile theme.xml ok");
++    ps4_diag("loadXml loadThemeXml begin");
+     loadThemeXml(*filename);
++    ps4_diag("loadXml loadThemeXml ok");
+     return;
+   }
++  ps4_diag("loadXml findFile theme.xml not found");
+ }
+ 
+ void SkinTheme::loadThemeXml(const std::string& filename) {
 diff --git a/src/main/main.cpp b/src/main/main.cpp
 index af7eaec..2af9472 100644
 --- a/src/main/main.cpp

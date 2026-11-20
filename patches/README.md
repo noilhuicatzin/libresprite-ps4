@@ -163,7 +163,16 @@ here is submitted upstream.
   onRegenerate (loadSheet/loadXml) or resetFontAllWidgets. Run #21
   adds checkpoints there: CurrentTheme set regenerate begin/ok,
   regenerate onRegenerate begin/ok and resetFontAllWidgets begin/ok,
-  onRegenerate loadSheet begin/ok and loadXml begin/ok. Each call
+  onRegenerate loadSheet begin/ok and loadXml begin/ok. Run #21's
+  log showed loadSheet ok and the hang in loadXml (after "loadXml
+  begin", before "loadXml ok"). Note: Lux first re-sent the #20 log
+  by mistake, then re-downloaded and re-installed the #21 build — the
+  log was still the #20 one, because the PS4 kept running the old
+  install (same .pkg version); uninstalling LibreSprite first and
+  then installing the #21 .pkg fixed it. Run #22 adds checkpoints
+  inside loadXml: findFile skin.xml begin/ok/not found, loadFonts
+  begin/ok, loadSkinXml begin/ok, findFile theme.xml begin/ok/not
+  found, loadThemeXml begin/ok. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang
