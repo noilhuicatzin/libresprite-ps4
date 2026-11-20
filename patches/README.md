@@ -148,7 +148,11 @@ here is submitted upstream.
   create_main_display begin/ok, and inside SDL2Display: gfx begin/ok
   plus SDL_CreateWindow begin/ok and SDL_CreateRenderer begin/ok
   (the display uses SDL_WINDOW_RESIZABLE with no SDL_WINDOW_OPENGL
-  flag, unlike the smoke test — a real difference to watch). Each call
+  flag, unlike the smoke test — a real difference to watch). Run #18
+  went RED on a compile error in this patch: ps4_diag took const
+  char* but two call sites passed a std::string (modules.cpp,
+  gui.cpp); the fix (run #19) makes ps4_diag take const std::string&,
+  so both literals and built messages work. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang

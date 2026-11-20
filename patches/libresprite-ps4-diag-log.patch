@@ -136,10 +136,10 @@ index 863d7f3..bea99dc 100644
    manager = new CustomizedGuiManager();
 diff --git a/src/app/ps4_diag_log.h b/src/app/ps4_diag_log.h
 new file mode 100644
-index 0000000..3318a12
+index 0000000..cbac782
 --- /dev/null
 +++ b/src/app/ps4_diag_log.h
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,29 @@
 +// Aseprite    - Copyright (C) 2001-2016  David Capello
 +// LibreSprite - Copyright (C) 2018-2026  LibreSprite contributors
 +//
@@ -156,12 +156,16 @@ index 0000000..3318a12
 +#pragma once
 +
 +#include <cstdio>
++#include <string>
 +
-+inline void ps4_diag(const char* msg)
++// Takes std::string so call sites can build messages dynamically
++// (e.g. with a module name or a value); string literals convert
++// implicitly, so plain ps4_diag("text") keeps working.
++inline void ps4_diag(const std::string& msg)
 +{
 +  FILE* f = std::fopen("/data/libresprite.log", "a");
 +  if (f) {
-+    std::fprintf(f, "[diag] %s\n", msg);
++    std::fprintf(f, "[diag] %s\n", msg.c_str());
 +    std::fclose(f);
 +  }
 +}
