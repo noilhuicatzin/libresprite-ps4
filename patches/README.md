@@ -127,22 +127,33 @@ here is submitted upstream.
   deps cache is preserved for the run that tests it.
 - **libresprite-ps4-diag-log.patch** — new file `src/app/ps4_diag_log.h`
   + `src/main/main.cpp` + `src/app/app.cpp` + `src/she/sdl2/she.cpp`
-  (TEMPORARY, run #16, extended in run #17): the editor launches but
-  stays on a black screen with no input response (only the PS button
-  works) and writes no log, so there is nothing to read to see where it
-  stops. This patch adds per-step startup checkpoints that write one
-  flushed line each to `/data/libresprite.log` on the console. Run #16
-  logged from `app_main` on (create_system, App ctor, initialize
-  stages, run) — but the log never appeared, which proves the hang is
-  BEFORE `app_main`, in she's `main()`. Run #17 moves the log start to
-  she's `main()` (truncate + `she main enter`, then `SDL_Init` begin/ok,
-  `IMG_Init` begin/ok, `app_main` begin) so the log exists even if
-  `SDL_Init` or `IMG_Init` hangs; `IMG_Init` is the prime suspect (the
-  smoke test never called it). Each call opens/appends/closes the file,
-  so no FILE* is shared between translation units and no log-level or
-  `she::log` setup is needed. Remove this file and all `ps4_diag()`
-  calls once the startup hang is fixed. This patch does NOT touch
-  `build-deps.sh`, so the deps cache is preserved.
+  + `src/app/modules.cpp` + `src/app/modules/gui.cpp`
+  + `src/she/sdl2/sdl2_display.cpp`
+  (TEMPORARY, run #16, extended in runs #17 and #18): the editor
+  launches but stays on a black screen with no input response (only
+  the PS button works) and writes no log, so there is nothing to read
+  to see where it stops. This patch adds per-step startup checkpoints
+  that write one flushed line each to `/data/libresprite.log` on the
+  console. Run #16 logged from `app_main` on — but the log never
+  appeared, which proved the hang is BEFORE `app_main`, in she's
+  `main()`. Run #17 moved the log start to she's `main()` (truncate +
+  `she main enter`, then `SDL_Init` begin/ok, `IMG_Init` begin/ok,
+  `app_main` begin). The run #17 log DID appear and showed: SDL_Init
+  ok, IMG_Init ok, app_main enter, create_system ok, App ctor ok,
+  initialize begin, CoreModules ok, Modules ok — then nothing. The
+  hang is in the LegacyModules step (the gui module's display
+  creation; the palette module just makes two in-memory palettes).
+  Run #18 adds finer checkpoints there: the module name before each
+  init, gpuAccel + create_main_display begin/ok in init_module_gui,
+  create_main_display begin/ok, and inside SDL2Display: gfx begin/ok
+  plus SDL_CreateWindow begin/ok and SDL_CreateRenderer begin/ok
+  (the display uses SDL_WINDOW_RESIZABLE with no SDL_WINDOW_OPENGL
+  flag, unlike the smoke test — a real difference to watch). Each call
+  opens/appends/closes the file, so no FILE* is shared between
+  translation units and no log-level or `she::log` setup is needed.
+  Remove this file and all `ps4_diag()` calls once the startup hang
+  is fixed. This patch does NOT touch `build-deps.sh`, so the deps
+  cache is preserved.
 
 ## SDL patches (copied verbatim from the Solarus port)
 

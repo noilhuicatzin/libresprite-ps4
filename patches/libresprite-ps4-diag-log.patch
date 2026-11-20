@@ -69,6 +69,71 @@ index 5d02312..f991c12 100644
  }
  
  void App::run()
+diff --git a/src/app/modules.cpp b/src/app/modules.cpp
+index 2d6b765..d22ae98 100644
+--- a/src/app/modules.cpp
++++ b/src/app/modules.cpp
+@@ -13,6 +13,7 @@
+ 
+ #include "app/modules/gui.h"
+ #include "app/modules/palettes.h"
++#include "app/ps4_diag_log.h"
+ 
+ namespace app {
+ 
+@@ -43,6 +44,7 @@ LegacyModules::LegacyModules(int requirements)
+   for (int c=0; c<modules; c++)
+     if ((module[c].reqs & requirements) == module[c].reqs) {
+       LOG("Installing module: %s\n", module[c].name);
++      ps4_diag(std::string("installing module: ") + module[c].name);
+ 
+       if ((*module[c].init)() < 0)
+         throw base::Exception("Error initializing module: %s",
+diff --git a/src/app/modules/gui.cpp b/src/app/modules/gui.cpp
+index 863d7f3..bea99dc 100644
+--- a/src/app/modules/gui.cpp
++++ b/src/app/modules/gui.cpp
+@@ -21,6 +21,7 @@
+ #include "app/modules/gui.h"
+ #include "app/modules/i18n.h"
+ #include "app/modules/palettes.h"
++#include "app/ps4_diag_log.h"
+ #include "app/pref/preferences.h"
+ #include "app/resource_finder.h"
+ #include "app/tools/ink.h"
+@@ -110,6 +111,7 @@ static bool create_main_display(bool gpuAccel,
+   // executed.
+   int scale = Preferences::instance().general.screenScale();
+   she::instance()->setGpuAcceleration(gpuAccel);
++  ps4_diag("create_main_display begin");
+ 
+   try {
+     if (w > 0 && h > 0) {
+@@ -155,6 +157,7 @@ static bool create_main_display(bool gpuAccel,
+     }
+   }
+ 
++  ps4_diag("create_main_display ok");
+   return (main_display != nullptr);
+ }
+ 
+@@ -169,6 +172,8 @@ int init_module_gui()
+   if (!gui_mode)
+     gpuAccel = false;
+ 
++  ps4_diag(std::string("init_module_gui: gpuAccel=") + (gpuAccel ? "1" : "0"));
++  ps4_diag("init_module_gui: create_main_display begin");
+   if (!create_main_display(gpuAccel, maximized, lastError)) {
+     // If we've created the display with hardware acceleration,
+     // now we try to do it without hardware acceleration.
+@@ -187,6 +192,7 @@ int init_module_gui()
+       ("Unable to create a user-interface display.\nDetails: "+lastError+"\n").c_str());
+     return -1;
+   }
++  ps4_diag("init_module_gui: create_main_display ok");
+ 
+   // Create the default-manager
+   manager = new CustomizedGuiManager();
 diff --git a/src/app/ps4_diag_log.h b/src/app/ps4_diag_log.h
 new file mode 100644
 index 0000000..3318a12
@@ -157,6 +222,51 @@ index af7eaec..2af9472 100644
  	return 0;
        } catch (std::exception& e) {
  	std::cerr << e.what() << '\n';
+diff --git a/src/she/sdl2/sdl2_display.cpp b/src/she/sdl2/sdl2_display.cpp
+index bd33d20..6bb1669 100644
+--- a/src/she/sdl2/sdl2_display.cpp
++++ b/src/she/sdl2/sdl2_display.cpp
+@@ -22,6 +22,7 @@
+ #include "she/native_cursor.h"
+ #include "she/sdl2/sdl2_display.h"
+ #include "she/sdl2/sdl2_surface.h"
++#include "app/ps4_diag_log.h"
+ 
+ #if __has_include(<SDL2/SDL.h>)
+ #include <SDL2/SDL.h>
+@@ -70,7 +71,9 @@ namespace she {
+     width = 800;
+     height = 600;
+ 
++    ps4_diag("SDL2Display gfx begin");
+     instance()->gfx([&]{
++      ps4_diag("SDL_CreateWindow begin");
+       m_window = SDL_CreateWindow("",
+ 				  SDL_WINDOWPOS_UNDEFINED,
+ 				  SDL_WINDOWPOS_UNDEFINED,
+@@ -78,9 +81,13 @@ namespace she {
+ 				  SDL_WINDOW_RESIZABLE);
+       if (!m_window)
+ 	throw DisplayCreationException(SDL_GetError());
++      ps4_diag("SDL_CreateWindow ok");
+ 
+-      if (gpu)
++      if (gpu) {
++	ps4_diag("SDL_CreateRenderer begin");
+ 	m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED);
++	ps4_diag("SDL_CreateRenderer ok");
++      }
+ 
+       sdl::windowIdToDisplay[SDL_GetWindowID(m_window)] = this;
+       SDL_GetWindowSize(m_window, &width, &height);
+@@ -123,6 +130,7 @@ namespace she {
+       std::cout << "Tablet support: " << (tabletSupport ? "OK" : "FAILED") << std::endl;
+       }
+     }, true);
++    ps4_diag("SDL2Display gfx ok");
+ 
+     setScale(scale);
+   }
 diff --git a/src/she/sdl2/she.cpp b/src/she/sdl2/she.cpp
 index afc22fe..d91a858 100644
 --- a/src/she/sdl2/she.cpp
