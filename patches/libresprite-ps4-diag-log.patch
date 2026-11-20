@@ -1,0 +1,166 @@
+diff --git a/src/app/app.cpp b/src/app/app.cpp
+index 5d02312..f991c12 100644
+--- a/src/app/app.cpp
++++ b/src/app/app.cpp
+@@ -33,6 +33,7 @@
+ #include "app/modules/gui.h"
+ #include "app/modules/palettes.h"
+ #include "app/pref/preferences.h"
++#include "app/ps4_diag_log.h"
+ #include "app/recent_files.h"
+ #include "app/resource_finder.h"
+ #include "app/script/api/storage_internal.h"
+@@ -151,6 +152,7 @@ void App::initialize(const AppOptions& options)
+     m_uiSystem.reset(new ui::UISystem);
+ 
+   m_coreModules = std::make_unique<CoreModules>();
++  ps4_diag("initialize: CoreModules ok");
+ 
+   bool createLogInDesktop = false;
+   switch (options.verboseLevel()) {
+@@ -167,11 +169,13 @@ void App::initialize(const AppOptions& options)
+   }
+ 
+   m_modules = std::make_unique<Modules>(createLogInDesktop);
++  ps4_diag("initialize: Modules ok");
+   // --batch/--shell also install the gui module (display + ui::Manager):
+   // the display runs on SDL's dummy video driver, so ui::Manager is
+   // non-null in every mode that executes code.
+   m_legacy = std::make_unique<LegacyModules>(
+     (options.startUI() || options.startBatch() || options.startShell()) ? REQUIRE_INTERFACE: 0);
++  ps4_diag("initialize: LegacyModules ok");
+   m_brushes.reset(new AppBrushes);
+ 
+   if (options.hasExporterParams())
+@@ -187,6 +191,7 @@ void App::initialize(const AppOptions& options)
+   // Load or create the default palette, or migrate the default
+   // palette from an old format palette to the new one, etc.
+   load_default_palette(options.paletteFileName());
++  ps4_diag("initialize: palette ok");
+ 
+   // Initialize GUI interface (headless runs build it invisibly)
+   UIContext* ctx = UIContext::instance();
+@@ -204,6 +209,7 @@ void App::initialize(const AppOptions& options)
+ 
+     // Create the main window and show it.
+     m_mainWindow.reset(new MainWindow);
++    ps4_diag("initialize: MainWindow created");
+ 
+     // Default status of the main window.
+     app_rebuild_documents_tabs();
+@@ -214,10 +220,12 @@ void App::initialize(const AppOptions& options)
+       m_mainWindow->showDataRecovery(m_modules->recovery());
+ 
+     m_mainWindow->openWindow();
++    ps4_diag("initialize: openWindow ok");
+ 
+     // Redraw the whole screen.
+     ui::Manager::getDefault()->invalidate();
+   }
++  ps4_diag("initialize: gui done");
+ 
+   // Procress options
+   LOG("Processing options...\n");
+@@ -670,6 +678,7 @@ void App::initialize(const AppOptions& options)
+   }
+ 
+   she::instance()->finishLaunching();
++  ps4_diag("initialize: done");
+ }
+ 
+ void App::run()
+diff --git a/src/app/ps4_diag_log.h b/src/app/ps4_diag_log.h
+new file mode 100644
+index 0000000..3318a12
+--- /dev/null
++++ b/src/app/ps4_diag_log.h
+@@ -0,0 +1,25 @@
++// Aseprite    - Copyright (C) 2001-2016  David Capello
++// LibreSprite - Copyright (C) 2018-2026  LibreSprite contributors
++//
++// This program is free software; you can redistribute it and/or modify
++// it under the terms of the GNU General Public License version 2 as
++// published by the Free Software Foundation.
++
++// PS4 diagnostic startup log (TEMPORARY, for the black-screen diagnosis).
++// Writes one flushed line per checkpoint to /data/libresprite.log on the
++// console, so a console test shows exactly where the editor stops during
++// startup. Each call opens/appends/closes the file, so no FILE* is shared
++// between translation units and no log-level or she::log setup is needed.
++// Remove this file and all ps4_diag() calls once the startup hang is fixed.
++#pragma once
++
++#include <cstdio>
++
++inline void ps4_diag(const char* msg)
++{
++  FILE* f = std::fopen("/data/libresprite.log", "a");
++  if (f) {
++    std::fprintf(f, "[diag] %s\n", msg);
++    std::fclose(f);
++  }
++}
+diff --git a/src/main/main.cpp b/src/main/main.cpp
+index af7eaec..50aee7d 100644
+--- a/src/main/main.cpp
++++ b/src/main/main.cpp
+@@ -12,6 +12,7 @@
+ #include "app/app.h"
+ #include "app/app_options.h"
+ #include "app/console.h"
++#include "app/ps4_diag_log.h"
+ #include "app/resource_finder.h"
+ #include "app/send_crash.h"
+ #include "base/exception.h"
+@@ -54,6 +55,16 @@ namespace {
+ // Aseprite entry point. (Called from she library.)
+ int app_main(int argc, char* argv[])
+ {
++  // PS4 diag: fresh log per run (see app/ps4_diag_log.h).
++  {
++    FILE* f = std::fopen("/data/libresprite.log", "w");
++    if (f) {
++      std::fprintf(f, "[diag] libresprite start\n");
++      std::fclose(f);
++    }
++  }
++  ps4_diag("app_main enter");
++
+   // Initialize the locale. Aseprite isn't ready to handle numeric
+   // fields with other locales (e.g. we expect strings like "10.32" be
+   // used in std::strtod(), not something like "10,32").
+@@ -69,13 +80,17 @@ int app_main(int argc, char* argv[])
+ 
+   try {
+     static app::AppOptions options(argc, const_cast<const char**>(argv));
++    ps4_diag("create_system begin");
+     LIFETIME auto system = std::unique_ptr<she::System>(she::create_system());
++    ps4_diag("create_system ok");
+     return system->run([]{
+       try {
+ 	base::MemoryDump memoryDump; //
+ 	MemLeak memleak;
+ 	base::SystemConsole systemConsole;
++	ps4_diag("App ctor begin");
+ 	app::App app;
++	ps4_diag("App ctor ok");
+ 
+ 	// Change the name of the memory dump file
+ 	{
+@@ -84,12 +99,16 @@ int app_main(int argc, char* argv[])
+ 	    memoryDump.setFileName(filename);
+ 	}
+ 
++	ps4_diag("initialize begin");
+ 	app.initialize(options);
++	ps4_diag("initialize ok");
+ 
+ 	if (options.startShell())
+ 	  systemConsole.prepareShell();
+ 
++	ps4_diag("run begin");
+ 	app.run();
++	ps4_diag("run end");
+ 	return 0;
+       } catch (std::exception& e) {
+ 	std::cerr << e.what() << '\n';
