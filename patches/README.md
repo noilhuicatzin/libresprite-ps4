@@ -125,6 +125,21 @@ here is submitted upstream.
   `dso_handle` is ignored: the binary is statically linked, nothing is
   ever `dlclose()`d. This patch does NOT touch `build-deps.sh`, so the
   deps cache is preserved for the run that tests it.
+- **libresprite-ps4-diag-log.patch** — new file `src/app/ps4_diag_log.h`
+  + `src/main/main.cpp` + `src/app/app.cpp` (TEMPORARY, run #16): the
+  editor launches but stays on a black screen with no input response
+  (only the PS button works) and writes no log, so there is nothing to
+  read to see where it stops. This patch adds per-step startup
+  checkpoints that write one flushed line each to
+  `/data/libresprite.log` on the console: `app_main` enter,
+  `create_system` begin/ok, `App` ctor begin/ok, `initialize` begin/ok,
+  `run` begin/end, and inside `App::initialize` CoreModules, Modules,
+  LegacyModules, palette, MainWindow created, openWindow, gui done and
+  done. Each call opens/appends/closes the file, so no FILE* is shared
+  between translation units and no log-level or `she::log` setup is
+  needed; `app_main` truncates the file once at startup. Remove this
+  file and all `ps4_diag()` calls once the startup hang is fixed. This
+  patch does NOT touch `build-deps.sh`, so the deps cache is preserved.
 
 ## SDL patches (copied verbatim from the Solarus port)
 
@@ -139,6 +154,16 @@ here is submitted upstream.
   `-Werror=declaration-after-statement` unconditionally; the PacBrew PS4
   drivers declare variables after statements in 12 places. Moves those
   declarations to the top of their blocks, changing no logic.
+- **sdl-ps4-piglet-config.patch** — `src/video/ps4/SDL_ps4piglet.c`
+  (smoke test, console run 2026-11-19): `PS4_PigletInit` used ONE fixed
+  Piglet memory config (system 256 MiB / video 256 MiB, no flexible
+  memory) and never checked whether it yields an EGL display, so
+  `SDL_CreateWindow` failed with "Could not get EGL display" while
+  Solarus' gl-smoke passed with the same SDL build. Mirrors SoH's
+  candidate list (first: system 128 / video 512 / flexible 236 MiB) and
+  keeps the first config whose `eglGetDisplay()` succeeds. This patch
+  lives in `build-deps.sh`, so changing it DOES invalidate the deps
+  cache (run #15 rebuilt all 10 deps).
 
 ## libarchive patches (v3.8.9, applied by `build-deps.sh`)
 
