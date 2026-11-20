@@ -152,7 +152,12 @@ here is submitted upstream.
   went RED on a compile error in this patch: ps4_diag took const
   char* but two call sites passed a std::string (modules.cpp,
   gui.cpp); the fix (run #19) makes ps4_diag take const std::string&,
-  so both literals and built messages work. Each call
+  so both literals and built messages work. Run #19's log showed the
+  display IS created (SDL_CreateWindow ok, SDL_CreateRenderer ok with
+  gpuAccel=1) and create_main_display ok — the hang moved past
+  display creation, into the rest of init_module_gui. Run #20 adds
+  checkpoints there: manager begin/ok, setLanguage begin/ok,
+  SkinTheme begin/ok, save_gui_config begin/ok. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang

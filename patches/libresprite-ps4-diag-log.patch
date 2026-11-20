@@ -90,7 +90,7 @@ index 2d6b765..d22ae98 100644
        if ((*module[c].init)() < 0)
          throw base::Exception("Error initializing module: %s",
 diff --git a/src/app/modules/gui.cpp b/src/app/modules/gui.cpp
-index 863d7f3..bea99dc 100644
+index 863d7f3..203bf07 100644
 --- a/src/app/modules/gui.cpp
 +++ b/src/app/modules/gui.cpp
 @@ -21,6 +21,7 @@
@@ -126,14 +126,44 @@ index 863d7f3..bea99dc 100644
    if (!create_main_display(gpuAccel, maximized, lastError)) {
      // If we've created the display with hardware acceleration,
      // now we try to do it without hardware acceleration.
-@@ -187,6 +192,7 @@ int init_module_gui()
+@@ -187,14 +192,20 @@ int init_module_gui()
        ("Unable to create a user-interface display.\nDetails: "+lastError+"\n").c_str());
      return -1;
    }
 +  ps4_diag("init_module_gui: create_main_display ok");
  
    // Create the default-manager
++  ps4_diag("init_module_gui: manager begin");
    manager = new CustomizedGuiManager();
+   manager->setDisplay(main_display);
++  ps4_diag("init_module_gui: manager ok");
+ 
++  ps4_diag("init_module_gui: setLanguage begin");
+   setLanguage(Preferences::instance().general.language());
++  ps4_diag("init_module_gui: setLanguage ok");
+ 
+   // Setup the GUI theme for all widgets
++  ps4_diag("init_module_gui: SkinTheme begin");
+   gui_theme = new SkinTheme();
+   {
+       auto uiScale = Preferences::instance().experimental.uiScale();
+@@ -225,13 +236,16 @@ int init_module_gui()
+       }
+       gui_theme->setScale(uiScale);
+   }
++  ps4_diag("init_module_gui: SkinTheme ok");
+   CurrentTheme::set(gui_theme);
+ 
+   if (maximized)
+     main_display->maximize();
+ 
+   // Set graphics options for next time
++  ps4_diag("init_module_gui: save_gui_config begin");
+   save_gui_config();
++  ps4_diag("init_module_gui: save_gui_config ok");
+ 
+   return 0;
+ }
 diff --git a/src/app/ps4_diag_log.h b/src/app/ps4_diag_log.h
 new file mode 100644
 index 0000000..cbac782
