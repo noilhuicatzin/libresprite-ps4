@@ -209,7 +209,18 @@ here is submitted upstream.
   "loadFont trying: <path>" for each font path attempted and "loadFont
   loop done, candidates=N" after the loop, so the last line shows
   exactly which file it hangs on. The build marker moves to build-25.
-  Each call
+  Run #25's log (2026-11-20, libresprite-adc5093c.log) proved the
+  #25 build ran and its last line is "loadFont trying:
+  /data/libresprite/data/skins/default/font-en.otf" — the hang is
+  inside loadTrueTypeFont for the FIRST font path tried, a file that
+  does not exist (the skin has no font file; the real one is
+  data/fonts/font.ttf). FreeType's FT_Open_Face hangs on a nonexistent
+  path on PS4 instead of failing fast. Run #26 fixes it at the
+  source: loadFont now skips any path that is not an existing file
+  (base::is_file) before calling FreeType, so the ~10 nonexistent
+  paths are skipped and the real font.ttf is reached. The same patch
+  already skipped nonexistent system font dirs in the enumeration
+  fallback. The build marker moves to build-26. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang
