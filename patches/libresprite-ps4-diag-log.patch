@@ -200,7 +200,7 @@ index 0000000..cbac782
 +  }
 +}
 diff --git a/src/app/ui/skin/skin_theme.cpp b/src/app/ui/skin/skin_theme.cpp
-index cc5cab0..f8faee5 100644
+index cc5cab0..4f05bd9 100644
 --- a/src/app/ui/skin/skin_theme.cpp
 +++ b/src/app/ui/skin/skin_theme.cpp
 @@ -19,6 +19,7 @@
@@ -286,6 +286,22 @@ index cc5cab0..f8faee5 100644
  }
  
  void SkinTheme::loadThemeXml(const std::string& filename) {
+@@ -2364,6 +2391,7 @@ std::shared_ptr<she::Font> SkinTheme::loadFont(const std::vector<std::string>& f
+   std::vector<std::pair<std::string, std::string>> candidates;
+ 
+   for (auto& themeFont : fonts) {
++    ps4_diag(std::string("loadFont trying: ") + themeFont);
+     bool isTrueType = base::get_file_extension(themeFont) != "png";
+     if (isTrueType) {
+       if (auto f = she::instance()->loadTrueTypeFont(themeFont.c_str(), size * guiscale())) {
+@@ -2396,6 +2424,7 @@ std::shared_ptr<she::Font> SkinTheme::loadFont(const std::vector<std::string>& f
+     }
+   }
+ 
++  ps4_diag(std::string("loadFont loop done, candidates=") + std::to_string(candidates.size()));
+   std::sort(candidates.begin(), candidates.end(), [](auto& a, auto& b){
+     return a.first.size() > b.first.size();
+   });
 diff --git a/src/main/main.cpp b/src/main/main.cpp
 index af7eaec..2af9472 100644
 --- a/src/main/main.cpp
@@ -389,7 +405,7 @@ index bd33d20..6bb1669 100644
      setScale(scale);
    }
 diff --git a/src/she/sdl2/she.cpp b/src/she/sdl2/she.cpp
-index afc22fe..d91a858 100644
+index afc22fe..f4b4cfa 100644
 --- a/src/she/sdl2/she.cpp
 +++ b/src/she/sdl2/she.cpp
 @@ -17,6 +17,7 @@
@@ -410,7 +426,7 @@ index afc22fe..d91a858 100644
 +  {
 +    FILE* f = std::fopen("/data/libresprite.log", "w");
 +    if (f) {
-+      std::fprintf(f, "[diag] libresprite start build-24\n");
++      std::fprintf(f, "[diag] libresprite start build-25\n");
 +      std::fclose(f);
 +    }
 +  }

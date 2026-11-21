@@ -200,7 +200,16 @@ here is submitted upstream.
   build has a distinct .pkg version and installing it updates the old
   install. Run #24 also writes the build number into the first log
   line ("libresprite start build-24") so the running build is visible
-  at a glance. Each call
+  at a glance. Run #24's log (2026-11-20, libresprite-31d4e6c2.log)
+  proved the #24 build ran and reached "loadFonts rf done, paths=24"
+  + "loadFonts loadFont begin" — the rf.next() loop does NOT hang, and
+  the hang is INSIDE loadFont, after "loadFont begin". (The earlier
+  logs that kept arriving were the old file from Lux's phone, not a
+  fresh download.) Run #25 adds checkpoints inside loadFont itself:
+  "loadFont trying: <path>" for each font path attempted and "loadFont
+  loop done, candidates=N" after the loop, so the last line shows
+  exactly which file it hangs on. The build marker moves to build-25.
+  Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang
