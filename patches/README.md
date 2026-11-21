@@ -125,6 +125,19 @@ here is submitted upstream.
   `dso_handle` is ignored: the binary is statically linked, nothing is
   ever `dlclose()`d. This patch does NOT touch `build-deps.sh`, so the
   deps cache is preserved for the run that tests it.
+- **libresprite-ps4-loadfont-skip-missing-dirs.patch** — `src/app/ui/skin/skin_theme.cpp`
+  (run #24): in `SkinTheme::loadFont`, when a theme font fails to load
+  with FreeType, the code falls back to enumerating the system font
+  directories (`base::get_font_paths()`: /usr/share/fonts,
+  /usr/local/share/fonts, ~/.fonts, ...) via
+  `FileSystemModule::getFileItemFromPath` + `children()`. None of those
+  directories exists on PS4, so the enumeration can never find a font
+  there — it is pure cost during startup (it runs once per failed font
+  path, ~7 times before the bundled fonts/font.ttf is reached) and a
+  hang risk on those Unix paths. This patch skips any font dir that
+  does not exist (`base::is_directory` check before touching the
+  FileSystemModule). On desktop, directories that exist are still
+  enumerated exactly as before, so behaviour is unchanged there.
 - **libresprite-ps4-diag-log.patch** — new file `src/app/ps4_diag_log.h`
   + `src/main/main.cpp` + `src/app/app.cpp` + `src/she/sdl2/she.cpp`
   + `src/app/modules.cpp` + `src/app/modules/gui.cpp`
@@ -176,7 +189,18 @@ here is submitted upstream.
   skin.xml ok and the hang in loadFonts (after "loadFonts begin").
   Run #23 adds checkpoints inside loadFonts: rf done with the number
   of paths found, loadFont begin/ok, for both the default font and
-  the mini font. Each call
+  the mini font. Run #23's log never arrived as a #23 log: Lux deleted
+  the log, uninstalled, reinstalled and re-ran, and the fresh log still
+  ended at "loadFonts begin" with no #23 checkpoints — which proves the
+  #23 build never ran on the console (the code between "loadFonts
+  begin" and "rf done" is pure string/vector work that cannot hang).
+  The .pkg version was 01.00 for every build, so installing over the
+  old one did not replace it. Run #24 fixes that at the source: the
+  workflow now passes VERSION 01.<run_number> to package.sh, so every
+  build has a distinct .pkg version and installing it updates the old
+  install. Run #24 also writes the build number into the first log
+  line ("libresprite start build-24") so the running build is visible
+  at a glance. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang

@@ -123,6 +123,12 @@ jobs:
 
       - name: Package app
         working-directory: libresprite-ps4
+        # Unique .pkg version per run (01.<run_number>): every build used
+        # to ship as 01.00, so installing over the old one did not replace
+        # it on the console and Lux kept re-running the previous build
+        # (runs #21/#23). A distinct version makes the install an update.
+        env:
+          VERSION: 01.${{ github.run_number }}
         run: |
           bash package.sh
           ls -lh out/
