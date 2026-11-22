@@ -360,7 +360,7 @@ index af7eaec..2af9472 100644
        } catch (std::exception& e) {
  	std::cerr << e.what() << '\n';
 diff --git a/src/she/sdl2/sdl2_display.cpp b/src/she/sdl2/sdl2_display.cpp
-index bd33d20..6bb1669 100644
+index bd33d20..f9524c6 100644
 --- a/src/she/sdl2/sdl2_display.cpp
 +++ b/src/she/sdl2/sdl2_display.cpp
 @@ -22,6 +22,7 @@
@@ -404,8 +404,30 @@ index bd33d20..6bb1669 100644
  
      setScale(scale);
    }
+@@ -244,6 +252,9 @@ namespace she {
+ 
+   void SDL2Display::present()
+   {
++    static int presentCount = 0;
++    if (presentCount < 3)
++      ps4_diag(std::string("present called, dirty=") + (m_dirty ? "1" : "0") + " renderer=" + (m_renderer ? "1" : "0") + " count=" + std::to_string(++presentCount));
+     if (!m_dirty || !she::instance()->isGfxThread() || !m_surface)
+       return;
+     m_dirty = false;
+@@ -257,6 +268,11 @@ namespace she {
+       #endif
+       SDL_RenderCopy(m_renderer, texture, nullptr, nullptr);
+       SDL_RenderPresent(m_renderer);
++      static bool presentLogged = false;
++      if (!presentLogged) {
++        presentLogged = true;
++        ps4_diag("present SDL_RenderPresent done");
++      }
+     } else
+       SDL_UpdateWindowSurface(m_window);
+   }
 diff --git a/src/she/sdl2/she.cpp b/src/she/sdl2/she.cpp
-index afc22fe..3549bd3 100644
+index afc22fe..3dd975e 100644
 --- a/src/she/sdl2/she.cpp
 +++ b/src/she/sdl2/she.cpp
 @@ -17,6 +17,7 @@
@@ -426,7 +448,7 @@ index afc22fe..3549bd3 100644
 +  {
 +    FILE* f = std::fopen("/data/libresprite.log", "w");
 +    if (f) {
-+      std::fprintf(f, "[diag] libresprite start build-26\n");
++      std::fprintf(f, "[diag] libresprite start build-27\n");
 +      std::fclose(f);
 +    }
 +  }
@@ -455,6 +477,29 @@ index afc22fe..3549bd3 100644
 +  ps4_diag("app_main begin");
    return app_main(argc, argv);
  }
+diff --git a/src/ui/message_loop.cpp b/src/ui/message_loop.cpp
+index 8ddf1ad..c39411d 100644
+--- a/src/ui/message_loop.cpp
++++ b/src/ui/message_loop.cpp
+@@ -13,6 +13,8 @@
+ #include "ui/manager.h"
+ #include "she/system.h"
+ 
++#include "app/ps4_diag_log.h"
++
+ namespace ui {
+ 
+ MessageLoop::MessageLoop(Manager* manager)
+@@ -22,6 +24,9 @@ MessageLoop::MessageLoop(Manager* manager)
+ 
+ void MessageLoop::pumpMessages()
+ {
++  static int pumpCount = 0;
++  if (pumpCount < 3)
++    ps4_diag(std::string("pumpMessages iter ") + std::to_string(++pumpCount));
+   if (m_manager->generateMessages()) {
+     m_manager->dispatchMessages();
+   } else {
 diff --git a/src/ui/theme.cpp b/src/ui/theme.cpp
 index 8d6ea8e..d6ccf4f 100644
 --- a/src/ui/theme.cpp

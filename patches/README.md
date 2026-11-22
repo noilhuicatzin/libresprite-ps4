@@ -220,7 +220,25 @@ here is submitted upstream.
   (base::is_file) before calling FreeType, so the ~10 nonexistent
   paths are skipped and the real font.ttf is reached. The same patch
   already skipped nonexistent system font dirs in the enumeration
-  fallback. The build marker moves to build-26. Each call
+  fallback. The build marker moves to build-26. Run #26's log
+  (2026-11-22, libresprite-6b44a064.log) proved the fix works: the
+  #26 build ran and loadFont reached "loadFonts loadFont ok" (all 24
+  paths tried, the nonexistent ones skipped, the real font.ttf loaded)
+  and "loadFonts mini loadFont ok"; startup then completed fully
+  (loadSkinXml ok, onRegenerate ok, resetFontAllWidgets ok,
+  save_gui_config ok, LegacyModules ok, MainWindow created, openWindow
+  ok, initialize ok) and the log ends at "run begin" — the app reached
+  the main event loop. The startup hang is FIXED. What remains is
+  whether the editor actually draws on screen, which only the console
+  test can show. Run #26's console test (2026-11-22, Lux): the screen
+  stays BLACK even though the log reaches "run begin" — the app is in
+  the event loop but nothing draws. That is a drawing problem, not a
+  loading problem: the app finishes starting in seconds, so leaving it
+  longer changes nothing. Run #27 adds checkpoints in the event loop
+  to find where the drawing stops: MessageLoop::pumpMessages logs its
+  first 3 iterations, SDL2Display::present logs its first 3 calls
+  (dirty/renderer state) and logs the first SDL_RenderPresent. The
+  build marker moves to build-27. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang
