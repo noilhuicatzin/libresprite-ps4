@@ -13,14 +13,17 @@
 #      third_party/pixman/CMakeLists.txt). If a future commit moves one of
 #      them, this script fails loudly instead of silently building the
 #      wrong thing.
-#   4. Applies the ten LibreSprite PS4 patches (idempotent): X11 block,
+#   4. Applies the eleven LibreSprite PS4 patches (idempotent): X11 block,
 #      PS4 paths, FindSDL2 pkg-config, vendored pixman flags + install
 #      rules, quickjs malloc_np.h / TIOCGWINSZ, delta type_index
 #      comparison, whole-archive link flags, __cxa_thread_atexit_impl
 #      for thread_local destructors, the loadFont fix (skip the
 #      system-font enumeration for directories that do not exist — on
 #      PS4 none of the Unix font dirs exist, so the enumeration is pure
-#      cost and a hang risk), and the TEMPORARY PS4 diag log
+#      cost and a hang risk), the fullscreen display fix (use the
+#      display's native resolution fullscreen instead of the hardcoded
+#      800x600 window, whose EGL surface is not displayed on a
+#      1920x1080 screen), and the TEMPORARY PS4 diag log
 #      (startup checkpoints to /data/libresprite.log for the black-screen
 #      diagnosis; remove it and its calls once the hang is fixed).
 #      See patches/README.md for what each patch does and why.
@@ -76,7 +79,7 @@ for f in src/app/resource_finder.cpp src/base/fs_unix.h src/gen/CMakeLists.txt t
 done
 
 echo "== applying PS4 source patches (idempotent)"
-for PATCH in "$HERE/patches/libresprite-ps4-x11.patch" "$HERE/patches/libresprite-ps4-paths.patch" "$HERE/patches/libresprite-ps4-find-sdl2-nopkgconfig.patch" "$HERE/patches/libresprite-ps4-pixman.patch" "$HERE/patches/quickjs-ps4-malloc-np.patch" "$HERE/patches/delta-ps4-typeindex.patch" "$HERE/patches/libresprite-ps4-whole-archive.patch" "$HERE/patches/libresprite-ps4-thread-atexit.patch" "$HERE/patches/libresprite-ps4-loadfont-skip-missing-dirs.patch" "$HERE/patches/libresprite-ps4-diag-log.patch"; do
+for PATCH in "$HERE/patches/libresprite-ps4-x11.patch" "$HERE/patches/libresprite-ps4-paths.patch" "$HERE/patches/libresprite-ps4-find-sdl2-nopkgconfig.patch" "$HERE/patches/libresprite-ps4-pixman.patch" "$HERE/patches/quickjs-ps4-malloc-np.patch" "$HERE/patches/delta-ps4-typeindex.patch" "$HERE/patches/libresprite-ps4-whole-archive.patch" "$HERE/patches/libresprite-ps4-thread-atexit.patch" "$HERE/patches/libresprite-ps4-loadfont-skip-missing-dirs.patch" "$HERE/patches/libresprite-ps4-display-fullscreen.patch" "$HERE/patches/libresprite-ps4-diag-log.patch"; do
     NAME="$(basename "$PATCH")"
     if git -C "$WORKSPACE/libresprite" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
         echo "   already applied: $NAME"
@@ -86,4 +89,4 @@ for PATCH in "$HERE/patches/libresprite-ps4-x11.patch" "$HERE/patches/libresprit
     fi
 done
 
-echo "== sources ready: $WORKSPACE/libresprite (10 PS4 patches applied)"
+echo "== sources ready: $WORKSPACE/libresprite (11 PS4 patches applied)"
