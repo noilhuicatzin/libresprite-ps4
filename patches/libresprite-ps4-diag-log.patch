@@ -360,7 +360,7 @@ index af7eaec..2af9472 100644
        } catch (std::exception& e) {
  	std::cerr << e.what() << '\n';
 diff --git a/src/she/sdl2/sdl2_display.cpp b/src/she/sdl2/sdl2_display.cpp
-index 3decf67..347698f 100644
+index 2fc5109..2e670bb 100644
 --- a/src/she/sdl2/sdl2_display.cpp
 +++ b/src/she/sdl2/sdl2_display.cpp
 @@ -22,6 +22,7 @@
@@ -371,7 +371,7 @@ index 3decf67..347698f 100644
  
  #if __has_include(<SDL2/SDL.h>)
  #include <SDL2/SDL.h>
-@@ -84,7 +85,9 @@ namespace she {
+@@ -87,7 +88,9 @@ namespace she {
        height = 600;
      }
  
@@ -381,7 +381,7 @@ index 3decf67..347698f 100644
        m_window = SDL_CreateWindow("",
  				  SDL_WINDOWPOS_UNDEFINED,
  				  SDL_WINDOWPOS_UNDEFINED,
-@@ -92,9 +95,13 @@ namespace she {
+@@ -95,9 +98,13 @@ namespace she {
  				  windowFlags);
        if (!m_window)
  	throw DisplayCreationException(SDL_GetError());
@@ -396,7 +396,7 @@ index 3decf67..347698f 100644
  
        sdl::windowIdToDisplay[SDL_GetWindowID(m_window)] = this;
        SDL_GetWindowSize(m_window, &width, &height);
-@@ -137,6 +144,7 @@ namespace she {
+@@ -140,6 +147,7 @@ namespace she {
        std::cout << "Tablet support: " << (tabletSupport ? "OK" : "FAILED") << std::endl;
        }
      }, true);
@@ -404,7 +404,7 @@ index 3decf67..347698f 100644
  
      setScale(scale);
    }
-@@ -258,11 +266,31 @@ namespace she {
+@@ -261,11 +269,31 @@ namespace she {
  
    void SDL2Display::present()
    {
@@ -436,7 +436,7 @@ index 3decf67..347698f 100644
        #ifdef EMSCRIPTEN
        auto texture = static_cast<SDL2Surface*>(m_doublebuffer)->getTexture(nullptr);
        #else
-@@ -271,6 +299,11 @@ namespace she {
+@@ -274,6 +302,11 @@ namespace she {
        #endif
        SDL_RenderCopy(m_renderer, texture, nullptr, nullptr);
        SDL_RenderPresent(m_renderer);
@@ -449,7 +449,7 @@ index 3decf67..347698f 100644
        SDL_UpdateWindowSurface(m_window);
    }
 diff --git a/src/she/sdl2/she.cpp b/src/she/sdl2/she.cpp
-index afc22fe..1d8514c 100644
+index afc22fe..b2eb3f9 100644
 --- a/src/she/sdl2/she.cpp
 +++ b/src/she/sdl2/she.cpp
 @@ -17,6 +17,7 @@
@@ -470,7 +470,7 @@ index afc22fe..1d8514c 100644
 +  {
 +    FILE* f = std::fopen("/data/libresprite.log", "w");
 +    if (f) {
-+      std::fprintf(f, "[diag] libresprite start build-29\n");
++      std::fprintf(f, "[diag] libresprite start build-30\n");
 +      std::fclose(f);
 +    }
 +  }

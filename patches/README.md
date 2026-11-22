@@ -260,8 +260,14 @@ here is submitted upstream.
   queried — same approach as SoH (gfx_sdl2.cpp). The magenta test
   stays in run #29, so a magenta screen at fullscreen proves the
   pipeline works at the right size, and the editor itself should then
-  appear after the first ~180 presents. The build marker moves to
-  build-29. Each call
+  appear after the first ~180 presents. Run #29's log (2026-11-22,
+  libresprite-c14af1ea.log) shows "present magenta test start" — the
+  magenta frame WAS presented — but Lux saw NO magenta on screen.
+  So the EGL surface is not displayed even at 1920x1080 fullscreen:
+  the renderer's GL context is not bound to the visible surface.
+  Run #30 adds SDL_WINDOW_OPENGL to the window flags (like SoH):
+  without it, SDL's renderer draws to a context that is never
+  displayed. The build marker moves to build-30. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang
