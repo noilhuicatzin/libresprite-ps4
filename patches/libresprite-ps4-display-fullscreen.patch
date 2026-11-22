@@ -1,28 +1,31 @@
 diff --git a/src/she/sdl2/sdl2_display.cpp b/src/she/sdl2/sdl2_display.cpp
-index bd33d20..2fc5109 100644
+index bd33d20..245ca27 100644
 --- a/src/she/sdl2/sdl2_display.cpp
 +++ b/src/she/sdl2/sdl2_display.cpp
-@@ -67,15 +67,32 @@ namespace she {
+@@ -67,15 +67,35 @@ namespace she {
  
      unique_display = this;
  
 -    width = 800;
 -    height = 600;
-+    // PS4: use the display's native resolution fullscreen instead of
-+    // the hardcoded 800x600 window. The 800x600 EGL surface is not
++    // PS4: use the display's native resolution instead of the
++    // hardcoded 800x600 window. The 800x600 EGL surface is not
 +    // displayed on a 1920x1080 screen (black screen despite frames
 +    // being presented). The window MUST carry SDL_WINDOW_OPENGL (like
 +    // SoH does) so SDL's renderer binds its GL context to the
 +    // window's EGL surface; without it, SDL_RenderPresent draws to a
-+    // context that is never displayed. Falls back to 800x600 if the
-+    // display mode cannot be queried.
++    // context that is never displayed. Do NOT use SDL_WINDOW_FULLSCREEN
++    // at creation: it makes SDL call SetDisplayMode, which destroys
++    // and recreates the EGL surface and orphans the renderer's
++    // context. On PS4 a window at the display's native size is
++    // effectively fullscreen (single window, single display). Falls
++    // back to 800x600 if the display mode cannot be queried.
 +    SDL_DisplayMode displayMode;
-+    int windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
++    int windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
 +    if (SDL_GetCurrentDisplayMode(0, &displayMode) == 0 &&
 +        displayMode.w > 0 && displayMode.h > 0) {
 +      width = displayMode.w;
 +      height = displayMode.h;
-+      windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN;
 +    } else {
 +      width = 800;
 +      height = 600;

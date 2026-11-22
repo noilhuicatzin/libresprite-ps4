@@ -267,7 +267,18 @@ here is submitted upstream.
   the renderer's GL context is not bound to the visible surface.
   Run #30 adds SDL_WINDOW_OPENGL to the window flags (like SoH):
   without it, SDL's renderer draws to a context that is never
-  displayed. The build marker moves to build-30. Each call
+  displayed. Run #31 (Lux: do not be afraid to move everything that
+  seems better, to save runs; do not be afraid to be wrong) combines
+  two changes at once: SDL_WINDOW_OPENGL stays, and
+  SDL_WINDOW_FULLSCREEN is dropped from window creation — it makes SDL
+  call SetDisplayMode, which destroys and recreates the EGL surface
+  and orphans the renderer's context. On PS4 a window at the
+  display's native size is effectively fullscreen anyway (single
+  window, single display). Note for later: SoH on PS4 does not use
+  SDL's renderer at all (mRenderer = nullptr) — it renders with raw
+  OpenGL. If #31 still shows nothing, the next step is to bypass
+  SDL's renderer and present with raw OpenGL like SoH. The build
+  marker moves to build-31. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang
