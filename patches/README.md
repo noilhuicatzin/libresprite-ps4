@@ -243,16 +243,25 @@ here is submitted upstream.
   presented: "pumpMessages iter 1/2/3", "present called, dirty=1
   renderer=1" and "present SDL_RenderPresent done". So the loop
   iterates, the display is dirty (content is painted), and
-  SDL_RenderPresent is called — yet the screen stays black. The
-  texture IS updated by flip() for the dirty region, so the remaining
-  suspects are (a) the EGL surface itself is not displayed (the window
-  is 800x600 but the PS4 display is 1920x1080), or (b) the surface
-  content is black. Run #28 tests the pipeline directly: present()
-  shows a solid magenta screen for the first 180 presents, bypassing
-  the texture entirely. If the screen turns magenta, the pipeline
-  works and the black screen is the texture/surface content; if it
-  stays black, the EGL surface is not displayed. The build marker
-  moves to build-28. Each call
+  SDL_RenderPresent is called — yet the screen stays totally black
+  (confirmed by Lux). The texture IS updated by flip() for the dirty
+  region, so the remaining suspects are (a) the EGL surface itself is
+  not displayed (the window is 800x600 but the PS4 display is
+  1920x1080), or (b) the surface content is black. Run #28 tests the
+  pipeline directly: present() shows a solid magenta screen for the
+  first 180 presents, bypassing the texture entirely. If the screen
+  turns magenta, the pipeline works and the black screen is the
+  texture/surface content; if it stays black, the EGL surface is not
+  displayed. Run #29 (Lux's call: fix the resolution now, it is the
+  resolution the editor should have anyway) adds the permanent
+  fullscreen fix: SDL2Display now queries the display's native mode
+  with SDL_GetCurrentDisplayMode and creates the window fullscreen at
+  that size (1920x1080), falling back to 800x600 if the mode cannot be
+  queried — same approach as SoH (gfx_sdl2.cpp). The magenta test
+  stays in run #29, so a magenta screen at fullscreen proves the
+  pipeline works at the right size, and the editor itself should then
+  appear after the first ~180 presents. The build marker moves to
+  build-29. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang

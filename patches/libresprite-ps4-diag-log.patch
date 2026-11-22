@@ -360,7 +360,7 @@ index af7eaec..2af9472 100644
        } catch (std::exception& e) {
  	std::cerr << e.what() << '\n';
 diff --git a/src/she/sdl2/sdl2_display.cpp b/src/she/sdl2/sdl2_display.cpp
-index bd33d20..3bd9a2a 100644
+index 3decf67..347698f 100644
 --- a/src/she/sdl2/sdl2_display.cpp
 +++ b/src/she/sdl2/sdl2_display.cpp
 @@ -22,6 +22,7 @@
@@ -371,9 +371,9 @@ index bd33d20..3bd9a2a 100644
  
  #if __has_include(<SDL2/SDL.h>)
  #include <SDL2/SDL.h>
-@@ -70,7 +71,9 @@ namespace she {
-     width = 800;
-     height = 600;
+@@ -84,7 +85,9 @@ namespace she {
+       height = 600;
+     }
  
 +    ps4_diag("SDL2Display gfx begin");
      instance()->gfx([&]{
@@ -381,8 +381,8 @@ index bd33d20..3bd9a2a 100644
        m_window = SDL_CreateWindow("",
  				  SDL_WINDOWPOS_UNDEFINED,
  				  SDL_WINDOWPOS_UNDEFINED,
-@@ -78,9 +81,13 @@ namespace she {
- 				  SDL_WINDOW_RESIZABLE);
+@@ -92,9 +95,13 @@ namespace she {
+ 				  windowFlags);
        if (!m_window)
  	throw DisplayCreationException(SDL_GetError());
 +      ps4_diag("SDL_CreateWindow ok");
@@ -396,7 +396,7 @@ index bd33d20..3bd9a2a 100644
  
        sdl::windowIdToDisplay[SDL_GetWindowID(m_window)] = this;
        SDL_GetWindowSize(m_window, &width, &height);
-@@ -123,6 +130,7 @@ namespace she {
+@@ -137,6 +144,7 @@ namespace she {
        std::cout << "Tablet support: " << (tabletSupport ? "OK" : "FAILED") << std::endl;
        }
      }, true);
@@ -404,7 +404,7 @@ index bd33d20..3bd9a2a 100644
  
      setScale(scale);
    }
-@@ -244,11 +252,31 @@ namespace she {
+@@ -258,11 +266,31 @@ namespace she {
  
    void SDL2Display::present()
    {
@@ -436,7 +436,7 @@ index bd33d20..3bd9a2a 100644
        #ifdef EMSCRIPTEN
        auto texture = static_cast<SDL2Surface*>(m_doublebuffer)->getTexture(nullptr);
        #else
-@@ -257,6 +285,11 @@ namespace she {
+@@ -271,6 +299,11 @@ namespace she {
        #endif
        SDL_RenderCopy(m_renderer, texture, nullptr, nullptr);
        SDL_RenderPresent(m_renderer);
@@ -449,7 +449,7 @@ index bd33d20..3bd9a2a 100644
        SDL_UpdateWindowSurface(m_window);
    }
 diff --git a/src/she/sdl2/she.cpp b/src/she/sdl2/she.cpp
-index afc22fe..7387ceb 100644
+index afc22fe..1d8514c 100644
 --- a/src/she/sdl2/she.cpp
 +++ b/src/she/sdl2/she.cpp
 @@ -17,6 +17,7 @@
@@ -470,7 +470,7 @@ index afc22fe..7387ceb 100644
 +  {
 +    FILE* f = std::fopen("/data/libresprite.log", "w");
 +    if (f) {
-+      std::fprintf(f, "[diag] libresprite start build-28\n");
++      std::fprintf(f, "[diag] libresprite start build-29\n");
 +      std::fclose(f);
 +    }
 +  }
