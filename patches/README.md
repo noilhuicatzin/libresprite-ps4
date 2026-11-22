@@ -238,7 +238,21 @@ here is submitted upstream.
   to find where the drawing stops: MessageLoop::pumpMessages logs its
   first 3 iterations, SDL2Display::present logs its first 3 calls
   (dirty/renderer state) and logs the first SDL_RenderPresent. The
-  build marker moves to build-27. Each call
+  build marker moves to build-27. Run #27's log (2026-11-22,
+  libresprite-5f4fdf4a.log) proved the event loop runs and frames ARE
+  presented: "pumpMessages iter 1/2/3", "present called, dirty=1
+  renderer=1" and "present SDL_RenderPresent done". So the loop
+  iterates, the display is dirty (content is painted), and
+  SDL_RenderPresent is called — yet the screen stays black. The
+  texture IS updated by flip() for the dirty region, so the remaining
+  suspects are (a) the EGL surface itself is not displayed (the window
+  is 800x600 but the PS4 display is 1920x1080), or (b) the surface
+  content is black. Run #28 tests the pipeline directly: present()
+  shows a solid magenta screen for the first 180 presents, bypassing
+  the texture entirely. If the screen turns magenta, the pipeline
+  works and the black screen is the texture/surface content; if it
+  stays black, the EGL surface is not displayed. The build marker
+  moves to build-28. Each call
   opens/appends/closes the file, so no FILE* is shared between
   translation units and no log-level or `she::log` setup is needed.
   Remove this file and all `ps4_diag()` calls once the startup hang

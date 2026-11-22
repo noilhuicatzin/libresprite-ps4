@@ -360,7 +360,7 @@ index af7eaec..2af9472 100644
        } catch (std::exception& e) {
  	std::cerr << e.what() << '\n';
 diff --git a/src/she/sdl2/sdl2_display.cpp b/src/she/sdl2/sdl2_display.cpp
-index bd33d20..f9524c6 100644
+index bd33d20..3bd9a2a 100644
 --- a/src/she/sdl2/sdl2_display.cpp
 +++ b/src/she/sdl2/sdl2_display.cpp
 @@ -22,6 +22,7 @@
@@ -404,7 +404,7 @@ index bd33d20..f9524c6 100644
  
      setScale(scale);
    }
-@@ -244,6 +252,9 @@ namespace she {
+@@ -244,11 +252,31 @@ namespace she {
  
    void SDL2Display::present()
    {
@@ -414,7 +414,29 @@ index bd33d20..f9524c6 100644
      if (!m_dirty || !she::instance()->isGfxThread() || !m_surface)
        return;
      m_dirty = false;
-@@ -257,6 +268,11 @@ namespace she {
+ 
+     if (m_renderer) {
++      // TEMP DIAG (build-28): show solid magenta for the first 180
++      // presents to test whether the display pipeline can show
++      // anything at all. If the screen turns magenta, the pipeline
++      // works and the black screen is the texture/surface content.
++      // If it stays black, the EGL surface itself is not displayed.
++      static int magentaCount = 0;
++      if (magentaCount < 180) {
++        ++magentaCount;
++        if (magentaCount == 1)
++          ps4_diag("present magenta test start");
++        SDL_SetRenderDrawColor(m_renderer, 255, 0, 255, 255);
++        SDL_RenderClear(m_renderer);
++        SDL_RenderPresent(m_renderer);
++        if (magentaCount == 180)
++          ps4_diag("present magenta test end");
++        return;
++      }
+       #ifdef EMSCRIPTEN
+       auto texture = static_cast<SDL2Surface*>(m_doublebuffer)->getTexture(nullptr);
+       #else
+@@ -257,6 +285,11 @@ namespace she {
        #endif
        SDL_RenderCopy(m_renderer, texture, nullptr, nullptr);
        SDL_RenderPresent(m_renderer);
@@ -427,7 +449,7 @@ index bd33d20..f9524c6 100644
        SDL_UpdateWindowSurface(m_window);
    }
 diff --git a/src/she/sdl2/she.cpp b/src/she/sdl2/she.cpp
-index afc22fe..3dd975e 100644
+index afc22fe..7387ceb 100644
 --- a/src/she/sdl2/she.cpp
 +++ b/src/she/sdl2/she.cpp
 @@ -17,6 +17,7 @@
@@ -448,7 +470,7 @@ index afc22fe..3dd975e 100644
 +  {
 +    FILE* f = std::fopen("/data/libresprite.log", "w");
 +    if (f) {
-+      std::fprintf(f, "[diag] libresprite start build-27\n");
++      std::fprintf(f, "[diag] libresprite start build-28\n");
 +      std::fclose(f);
 +    }
 +  }
